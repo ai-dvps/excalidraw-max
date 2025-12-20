@@ -7,6 +7,7 @@ This file provides guidance for Claude Code when working with this project.
 **exalidraw-max** is a desktop application built with:
 - **Frontend:** React 18 + TypeScript + Vite
 - **Backend:** Tauri v2 (Rust)
+  - docs: https://v2.tauri.app/start/
 - **Package Manager:** pnpm
 - **Platform:** macOS (desktop)
 
@@ -97,6 +98,9 @@ fn my_command(arg: String) -> String {
 - **React 18** with JSX
 - **TypeScript** for type safety
 - **Vite** for fast development and building
+- **Excalidraw** Virtual whiteboard for sketching hand-drawn like diagrams
+  - docs: https://docs.excalidraw.com/docs
+  - repo: https://github.com/excalidraw/excalidraw
 
 ## Dependencies
 
