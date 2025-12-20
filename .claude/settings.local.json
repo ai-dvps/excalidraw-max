@@ -18,7 +18,9 @@
       "WebFetch(domain:v2.tauri.app)",
       "Bash(grep:*)",
       "Bash(cargo check)",
-      "Bash(pnpm add:*)"
+      "Bash(pnpm add:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs:*)"
     ]
   }
 }
