@@ -4,8 +4,8 @@
 
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use tauri::{AppHandle, Emitter};
 use tauri::Manager;
+use tauri::{AppHandle, Emitter};
 
 /// Result of a save operation.
 #[derive(Debug, Serialize, Deserialize)]

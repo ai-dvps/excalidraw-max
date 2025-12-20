@@ -20,7 +20,8 @@
       "Bash(cargo check)",
       "Bash(pnpm add:*)",
       "Bash(lsof:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(pnpm tauri:*)"
     ]
   }
 }

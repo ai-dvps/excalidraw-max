@@ -1,6 +1,6 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 
-use commands::save_commands::{save_drawing, mark_unsaved, AppSaveState};
+use commands::save_commands::{mark_unsaved, save_drawing, AppSaveState};
 use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
 use tauri::{Emitter, Manager};
 
@@ -38,7 +38,7 @@ fn create_app_menu(app: &tauri::App) -> Result<(), tauri::Error> {
     let minimize_item = PredefinedMenuItem::minimize(app, None)?;
     let about_item = PredefinedMenuItem::about(app, None, None)?;
     let fullscreen_item = PredefinedMenuItem::fullscreen(app, None)?;
-    let services_item =PredefinedMenuItem::services(app, None)?;
+    let services_item = PredefinedMenuItem::services(app, None)?;
 
     // Create File submenu with Save and predefined items
     let app_menu = SubmenuBuilder::new(app, "App")
@@ -46,7 +46,7 @@ fn create_app_menu(app: &tauri::App) -> Result<(), tauri::Error> {
         .separator()
         .item(&services_item)
         .separator()
-        .item(&quit_item)               // Predefined: Quit
+        .item(&quit_item) // Predefined: Quit
         .build()?;
 
     let file_menu = SubmenuBuilder::new(app, "File")
@@ -65,14 +65,14 @@ fn create_app_menu(app: &tauri::App) -> Result<(), tauri::Error> {
 
     // Create Edit submenu with predefined menu items
     let edit_menu = SubmenuBuilder::new(app, "Edit")
-        .item(&undo_item)               // Predefined: Undo
-        .item(&redo_item)               // Predefined: Redo
+        .item(&undo_item) // Predefined: Undo
+        .item(&redo_item) // Predefined: Redo
         .separator()
-        .item(&cut_item)                // Predefined: Cut
-        .item(&copy_item)               // Predefined: Copy
-        .item(&paste_item)              // Predefined: Paste
+        .item(&cut_item) // Predefined: Cut
+        .item(&copy_item) // Predefined: Copy
+        .item(&paste_item) // Predefined: Paste
         .separator()
-        .item(&select_all_item)         // Predefined: Select All
+        .item(&select_all_item) // Predefined: Select All
         .build()?;
 
     // Create View submenu
@@ -86,19 +86,25 @@ fn create_app_menu(app: &tauri::App) -> Result<(), tauri::Error> {
     // Create Window submenu with predefined items
     let window_menu = SubmenuBuilder::new(app, "Window")
         .item(&fullscreen_item)
-        .item(&minimize_item)           // Predefined: Minimize
-        .text("zoom", "Zoom")           // Custom: Zoom
+        .item(&minimize_item) // Predefined: Minimize
+        .text("zoom", "Zoom") // Custom: Zoom
         .separator()
         .text("bringAllToFront", "Bring All to Front")
         .build()?;
 
     // Create Help submenu with predefined about
-    let help_menu = SubmenuBuilder::new(app, "Help")
-        .build()?;
+    let help_menu = SubmenuBuilder::new(app, "Help").build()?;
 
     // Create main menu with all standard menus
     let menu = MenuBuilder::new(app)
-        .items(&[&app_menu, &file_menu, &edit_menu, &view_menu, &window_menu, &help_menu])
+        .items(&[
+            &app_menu,
+            &file_menu,
+            &edit_menu,
+            &view_menu,
+            &window_menu,
+            &help_menu,
+        ])
         .build()?;
 
     app.set_menu(menu)?;
@@ -124,6 +130,7 @@ fn create_app_menu(app: &tauri::App) -> Result<(), tauri::Error> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![greet, save_drawing, mark_unsaved])
         .setup(|app| {
@@ -148,7 +155,8 @@ pub fn run() {
                 app.handle().plugin(
                     tauri_plugin_global_shortcut::Builder::new()
                         .with_handler(move |_app, shortcut, event| {
-                            if shortcut == &save_shortcut && event.state() == ShortcutState::Pressed {
+                            if shortcut == &save_shortcut && event.state() == ShortcutState::Pressed
+                            {
                                 let _ = app_handle.emit("shortcut-save-triggered", ());
                             }
                         })

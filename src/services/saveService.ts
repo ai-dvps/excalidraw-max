@@ -2,12 +2,13 @@
  * Save Service for Excalidraw Application
  *
  * Provides save functionality with smart save behavior:
- * - First save: prompts for file path
+ * - First save: shows save file dialog
  * - Subsequent saves: use existing path
  */
 
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { save } from '@tauri-apps/plugin-dialog';
 import type { SaveState, SaveResult } from '../types/save';
 
 // Module-level state
@@ -83,7 +84,7 @@ export const saveService = {
 
   /**
    * Trigger save operation.
-   * Shows prompt for path on first save, uses existing path on subsequent saves.
+   * Shows save dialog on first save, uses existing path on subsequent saves.
    */
   async triggerSave(): Promise<boolean> {
     console.log('Triggering save');
@@ -98,21 +99,21 @@ export const saveService = {
       // Get drawing data
       const drawingData = await getDrawingData();
 
-      // Determine file path - prompt if first save or no path
+      // Determine file path - use existing path or show dialog
       let filePath: string | null = null;
 
       if (!currentSaveState.currentFilePath) {
-        // First save - use window prompt
-        filePath = prompt('Enter file path to save:', 'untitled.excalidraw');
-
-        if (!filePath) {
-          // User cancelled
-          currentSaveState.isSaving = false;
-          return false;
-        }
+        // First save - show native save dialog
+        filePath = await this.showSaveDialog();
       } else {
         // Use existing path
         filePath = currentSaveState.currentFilePath;
+      }
+
+      if (!filePath) {
+        // User cancelled
+        currentSaveState.isSaving = false;
+        return false;
       }
 
       const result = await invoke<SaveResult>('save_drawing', {
@@ -139,6 +140,82 @@ export const saveService = {
       currentSaveState.isSaving = false;
       return false;
     }
+  },
+
+  /**
+   * Show save as dialog and save to the selected path.
+   * Always shows the file dialog regardless of current state.
+   */
+  async triggerSaveAs(): Promise<boolean> {
+    console.log('Triggering save as');
+    if (currentSaveState.isSaving) {
+      console.log('Save already in progress, skipping');
+      return false;
+    }
+
+    currentSaveState.isSaving = true;
+
+    try {
+      // Get drawing data
+      const drawingData = await getDrawingData();
+
+      // Always show save dialog for "Save As"
+      const filePath = await this.showSaveDialog();
+
+      if (!filePath) {
+        // User cancelled
+        currentSaveState.isSaving = false;
+        return false;
+      }
+
+      const result = await invoke<SaveResult>('save_drawing', {
+        jsonData: JSON.stringify(drawingData),
+        filePath: filePath,
+      });
+
+      if (result.success && result.filePath) {
+        currentSaveState.currentFilePath = result.filePath;
+        currentSaveState.lastSavedAt = new Date().toISOString();
+        currentSaveState.hasUnsavedChanges = false;
+        console.log('Drawing saved to:', result.filePath);
+        return true;
+      } else {
+        if (result.error) {
+          console.error('Save failed:', result.error);
+        }
+        currentSaveState.isSaving = false;
+        return false;
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Save error:', errorMessage);
+      currentSaveState.isSaving = false;
+      return false;
+    }
+  },
+
+  /**
+   * Show the native save file dialog.
+   */
+  async showSaveDialog(): Promise<string | null> {
+    return await save({
+      filters: [
+        {
+          name: 'Excalidraw',
+          extensions: ['excalidraw', 'json'],
+        },
+        {
+          name: 'JSON',
+          extensions: ['json'],
+        },
+        {
+          name: 'All Files',
+          extensions: ['*'],
+        },
+      ],
+      defaultPath: currentSaveState.currentFilePath || 'untitled.excalidraw',
+      title: 'Save Drawing',
+    });
   },
 
   /**
