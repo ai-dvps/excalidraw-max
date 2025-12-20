@@ -1,7 +1,12 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { Excalidraw } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 import { ErrorBoundary } from './ErrorBoundary';
+import { useSaveState } from './SaveStateContext';
+import { saveService } from '../services/saveService';
+
+// Type for Excalidraw API - using any to avoid type import issues
+type ExcalidrawAPI = any;
 
 /**
  * ExcalidrawCanvas - Wrapper component for Excalidraw integration.
@@ -11,11 +16,39 @@ import { ErrorBoundary } from './ErrorBoundary';
  * - Blank canvas on launch (initialData={null})
  * - Full-window container sizing
  * - Error boundary with retry button on initialization failure
+ * - Save integration via menu and keyboard shortcut
  */
 export function ExcalidrawCanvas(): React.ReactElement {
-  const handleChange = useCallback((_elements: any, _appState: any, _files: any) => {
-    // Canvas changed - not persisted in this version
-    // Hook for future auto-save feature
+  const excalidrawAPI = useRef<ExcalidrawAPI | null>(null);
+  const { markUnsaved } = useSaveState();
+
+  // Get drawing data from Excalidraw for save operations
+  const getDrawingData = useCallback(async () => {
+    if (excalidrawAPI.current) {
+      return {
+        elements: excalidrawAPI.current.getSceneElements(),
+        appState: excalidrawAPI.current.getAppState(),
+        files: excalidrawAPI.current.getFiles(),
+      };
+    }
+    return { elements: [], appState: {}, files: {} };
+  }, []);
+
+  // Set up drawing data getter for save service
+  React.useEffect(() => {
+    saveService.setDrawingDataGetter(getDrawingData);
+  }, [getDrawingData]);
+
+  const handleChange = useCallback(
+    (_elements: any, _appState: any, _files: any) => {
+      // Mark as unsaved when canvas changes
+      markUnsaved();
+    },
+    [markUnsaved]
+  );
+
+  const handleExcalidrawAPI = useCallback((api: ExcalidrawAPI) => {
+    excalidrawAPI.current = api;
   }, []);
 
   return (
@@ -30,6 +63,7 @@ export function ExcalidrawCanvas(): React.ReactElement {
         <Excalidraw
           initialData={null}
           onChange={handleChange}
+          excalidrawAPI={handleExcalidrawAPI}
           UIOptions={{
             // Hide canvas actions that require persistence
             canvasActions: {

@@ -118,6 +118,8 @@ fn my_command(arg: String) -> String {
 ## Active Technologies
 - TypeScript 5.6, Rust edition 2024 (Tauri v2) + React 18, @excalidraw/excalidraw (to be added), @tauri-apps/api v2 (001-auto-create-excalidraw)
 - N/A - no persistence for this feature (fresh canvas on every launch) (001-auto-create-excalidraw)
+- Rust 2024 edition, TypeScript 5.6 + `@tauri-apps/api/menu`, `@tauri-apps/plugin-global-shortcut`, `tauri-plugin-global-shortcut` (002-add-save-menu)
+- Local filesystem (JSON/Excalidraw format via file dialog) (002-add-save-menu)
 
 ## Recent Changes
 - 001-auto-create-excalidraw: Added TypeScript 5.6, Rust edition 2024 (Tauri v2) + React 18, @excalidraw/excalidraw (to be added), @tauri-apps/api v2

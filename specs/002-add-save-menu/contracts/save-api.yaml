@@ -1,0 +1,155 @@
+openapi: 3.1.0
+info:
+  title: Excalidraw Save API
+  version: 1.0.0
+  description: Tauri commands for save menu functionality
+
+# This is a Tauri-side API contract describing Rust commands
+# consumed by the frontend via @tauri-apps/api
+
+paths:
+  /commands/save_drawing:
+    post:
+      summary: Save drawing to local filesystem
+      description: |
+        Saves the drawing data to a file. If no path is provided,
+        shows a file dialog. Subsequent saves use the stored path.
+      operationId: saveDrawing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveDrawingRequest'
+      responses:
+        '200':
+          description: Save successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaveDrawingResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Save operation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /commands/get_save_state:
+    post:
+      summary: Get current save state
+      description: Returns the current save state including unsaved changes flag and file path
+      operationId: getSaveState
+      responses:
+        '200':
+          description: State retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaveStateResponse'
+
+  /commands/mark_unsaved:
+    post:
+      summary: Mark drawing as having unsaved changes
+      description: Called when the drawing is modified to update the save state
+      operationId: markUnsaved
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                hasChanges:
+                  type: boolean
+                  default: true
+      responses:
+        '200':
+          description: State updated successfully
+
+components:
+  schemas:
+    SaveDrawingRequest:
+      type: object
+      properties:
+        jsonData:
+          type: string
+          description: JSON serialization of the drawing data
+        forceDialog:
+          type: boolean
+          default: false
+          description: If true, always show file dialog even if path is known
+      required:
+        - jsonData
+
+    SaveDrawingResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        filePath:
+          type: string
+          nullable: true
+          description: Path where file was saved (null if cancelled)
+        error:
+          type: string
+          nullable: true
+          description: Error message if failed
+      required:
+        - success
+
+    SaveStateResponse:
+      type: object
+      properties:
+        hasUnsavedChanges:
+          type: boolean
+        currentFilePath:
+          type: string
+          nullable: true
+        lastSavedAt:
+          type: string
+          format: date-time
+          nullable: true
+        isSaving:
+          type: boolean
+      required:
+        - hasUnsavedChanges
+        - isSaving
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          enum:
+            - INVALID_DATA
+            - FILE_ACCESS_DENIED
+            - DISK_FULL
+            - SAVE_CANCELLED
+            - INTERNAL_ERROR
+        message:
+          type: string
+      required:
+        - code
+        - message
+
+# Tauri Event Subscriptions
+subscriptions:
+  save-state-changed:
+    description: Emitted when save state changes
+    payload:
+      type: object
+      properties:
+        hasUnsavedChanges:
+          type: boolean
+        currentFilePath:
+          type: string
+          nullable: true
+      required:
+        - hasUnsavedChanges

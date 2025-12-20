@@ -14,7 +14,11 @@
       "Bash(cat:*)",
       "Bash(pnpm add @excalidraw/excalidraw)",
       "Bash(pnpm tsc:*)",
-      "Bash(pnpm build)"
+      "Bash(pnpm build)",
+      "WebFetch(domain:v2.tauri.app)",
+      "Bash(grep:*)",
+      "Bash(cargo check)",
+      "Bash(pnpm add:*)"
     ]
   }
 }
