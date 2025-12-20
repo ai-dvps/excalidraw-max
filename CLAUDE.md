@@ -114,3 +114,10 @@ fn my_command(arg: String) -> String {
 - `typescript` - TypeScript compiler
 - `vite` - Build tool
 - `@tauri-apps/cli` - Tauri CLI
+
+## Active Technologies
+- TypeScript 5.6, Rust edition 2024 (Tauri v2) + React 18, @excalidraw/excalidraw (to be added), @tauri-apps/api v2 (001-auto-create-excalidraw)
+- N/A - no persistence for this feature (fresh canvas on every launch) (001-auto-create-excalidraw)
+
+## Recent Changes
+- 001-auto-create-excalidraw: Added TypeScript 5.6, Rust edition 2024 (Tauri v2) + React 18, @excalidraw/excalidraw (to be added), @tauri-apps/api v2

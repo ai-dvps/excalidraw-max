@@ -2,7 +2,19 @@
   "permissions": {
     "allow": [
       "Bash(git fetch:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(.specify/scripts/bash/create-new-feature.sh --json:*)",
+      "Bash(.specify/scripts/bash/check-prerequisites.sh --json --paths-only)",
+      "Bash(.specify/scripts/bash/setup-plan.sh --json)",
+      "WebFetch(domain:docs.excalidraw.com)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "Bash(.specify/scripts/bash/update-agent-context.sh:*)",
+      "Bash(.specify/scripts/bash/check-prerequisites.sh:*)",
+      "Bash(cat:*)",
+      "Bash(pnpm add @excalidraw/excalidraw)",
+      "Bash(pnpm tsc:*)",
+      "Bash(pnpm build)"
     ]
   }
 }
