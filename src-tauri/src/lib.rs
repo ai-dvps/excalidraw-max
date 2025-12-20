@@ -133,10 +133,16 @@ pub fn run() {
             // Create application menu with Save item
             create_app_menu(app)?;
 
-            // Register global shortcut for save (CmdOrControl+S)
+            // Register global shortcut for save (Cmd+S on Mac, Ctrl+S on Win/Linux)
             #[cfg(desktop)]
             {
                 let app_handle = app.handle().clone();
+
+                // Platform-dependent shortcut
+                #[cfg(target_os = "macos")]
+                let save_shortcut = Shortcut::new(Some(Modifiers::SUPER), Code::KeyS);
+
+                #[cfg(not(target_os = "macos"))]
                 let save_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::KeyS);
 
                 app.handle().plugin(
