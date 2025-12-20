@@ -37,18 +37,31 @@ fn create_app_menu(app: &tauri::App) -> Result<(), tauri::Error> {
     let select_all_item = PredefinedMenuItem::select_all(app, None)?;
     let minimize_item = PredefinedMenuItem::minimize(app, None)?;
     let about_item = PredefinedMenuItem::about(app, None, None)?;
+    let fullscreen_item = PredefinedMenuItem::fullscreen(app, None)?;
+    let services_item =PredefinedMenuItem::services(app, None)?;
 
     // Create File submenu with Save and predefined items
-    let file_menu = SubmenuBuilder::new(app, "File")
-        .item(&save_item)
+    let app_menu = SubmenuBuilder::new(app, "App")
+        .item(&about_item)
         .separator()
-        .text("new", "New")
-        .text("open", "Open...")
-        .separator()
-        .item(&close_item)              // Predefined: Close
+        .item(&services_item)
         .separator()
         .item(&quit_item)               // Predefined: Quit
         .build()?;
+
+    let file_menu = SubmenuBuilder::new(app, "File")
+        .text("new", "New")
+        .text("open", "Open...")
+        .separator()
+        .item(&save_item)
+        .text("saveAs", "Save As...")
+        .separator()
+        .text("close", "Close Window")
+        .text("close_all", "Close All Windows")
+        .separator()
+        .text("print", "Print...")
+        .build()?;
+    // Create File submenu with Save and predefined items
 
     // Create Edit submenu with predefined menu items
     let edit_menu = SubmenuBuilder::new(app, "Edit")
@@ -72,6 +85,7 @@ fn create_app_menu(app: &tauri::App) -> Result<(), tauri::Error> {
 
     // Create Window submenu with predefined items
     let window_menu = SubmenuBuilder::new(app, "Window")
+        .item(&fullscreen_item)
         .item(&minimize_item)           // Predefined: Minimize
         .text("zoom", "Zoom")           // Custom: Zoom
         .separator()
@@ -80,12 +94,11 @@ fn create_app_menu(app: &tauri::App) -> Result<(), tauri::Error> {
 
     // Create Help submenu with predefined about
     let help_menu = SubmenuBuilder::new(app, "Help")
-        .item(&about_item)              // Predefined: About
         .build()?;
 
     // Create main menu with all standard menus
     let menu = MenuBuilder::new(app)
-        .items(&[&file_menu, &edit_menu, &view_menu, &window_menu, &help_menu])
+        .items(&[&app_menu, &file_menu, &edit_menu, &view_menu, &window_menu, &help_menu])
         .build()?;
 
     app.set_menu(menu)?;
