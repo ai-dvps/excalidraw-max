@@ -58,11 +58,13 @@ export const saveService = {
 
     // Listen for menu-triggered saves
     const unlistenMenuSave = listen('menu-save-triggered', () => {
+      console.log('Menu save triggered')
       this.triggerSave();
     });
 
     // Listen for shortcut-triggered saves (from global-shortcut plugin)
     const unlistenShortcutSave = listen('shortcut-save-triggered', () => {
+      console.log('Shortcut save triggered')
       this.triggerSave();
     });
 
