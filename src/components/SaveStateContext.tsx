@@ -6,6 +6,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { saveService } from '../services/saveService';
+import { openService } from '../services/openService';
 import type { SaveState } from '../types/save';
 
 // Context type
@@ -29,7 +30,11 @@ export function SaveStateProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Initialize save service
-    const cleanup = saveService.init();
+    const cleanupSave = saveService.init();
+
+    // Initialize open service
+    const cleanupOpen = openService.init();
+
     setIsInitialized(true);
 
     // Set up state listener
@@ -38,7 +43,8 @@ export function SaveStateProvider({ children }: { children: React.ReactNode }) {
     }, 100);
 
     return () => {
-      cleanup();
+      cleanupSave();
+      cleanupOpen();
       clearInterval(interval);
     };
   }, []);

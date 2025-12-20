@@ -1,6 +1,7 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 
 use commands::save_commands::{mark_unsaved, save_drawing, AppSaveState};
+use commands::open_commands::read_drawing_file;
 use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
 use tauri::{Emitter, Manager};
 
@@ -49,9 +50,14 @@ fn create_app_menu(app: &tauri::App) -> Result<(), tauri::Error> {
         .item(&quit_item) // Predefined: Quit
         .build()?;
 
+    // Create Open menu item with accelerator
+    let open_item = MenuItemBuilder::with_id("open", "Open...")
+        .accelerator("CmdOrControl+O")
+        .build(app)?;
+
     let file_menu = SubmenuBuilder::new(app, "File")
         .text("new", "New")
-        .text("open", "Open...")
+        .item(&open_item)
         .separator()
         .item(&save_item)
         .text("saveAs", "Save As...")
@@ -117,6 +123,10 @@ fn create_app_menu(app: &tauri::App) -> Result<(), tauri::Error> {
                 // Emit event for frontend to handle save
                 let _ = app_handle.emit("menu-save-triggered", ());
             }
+            "open" => {
+                // Emit event for frontend to handle open
+                let _ = app_handle.emit("menu-open-triggered", ());
+            }
             _ => {
                 // Other menu events are handled by predefined items (quit, about, etc.)
                 println!("Menu event: {:?}", event.id());
@@ -132,7 +142,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, save_drawing, mark_unsaved])
+        .invoke_handler(tauri::generate_handler![greet, save_drawing, mark_unsaved, read_drawing_file])
         .setup(|app| {
             // Initialize save state
             app.manage(AppSaveState(Default::default()));
@@ -140,30 +150,40 @@ pub fn run() {
             // Create application menu with Save item
             create_app_menu(app)?;
 
-            // Register global shortcut for save (Cmd+S on Mac, Ctrl+S on Win/Linux)
+            // Register global shortcuts for save (Cmd/Ctrl+S) and open (Cmd/Ctrl+O)
             #[cfg(desktop)]
             {
                 let app_handle = app.handle().clone();
 
-                // Platform-dependent shortcut
+                // Platform-dependent shortcuts
                 #[cfg(target_os = "macos")]
                 let save_shortcut = Shortcut::new(Some(Modifiers::SUPER), Code::KeyS);
+
+                #[cfg(target_os = "macos")]
+                let open_shortcut = Shortcut::new(Some(Modifiers::SUPER), Code::KeyO);
 
                 #[cfg(not(target_os = "macos"))]
                 let save_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::KeyS);
 
+                #[cfg(not(target_os = "macos"))]
+                let open_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::KeyO);
+
                 app.handle().plugin(
                     tauri_plugin_global_shortcut::Builder::new()
                         .with_handler(move |_app, shortcut, event| {
-                            if shortcut == &save_shortcut && event.state() == ShortcutState::Pressed
-                            {
-                                let _ = app_handle.emit("shortcut-save-triggered", ());
+                            if event.state() == ShortcutState::Pressed {
+                                if shortcut == &save_shortcut {
+                                    let _ = app_handle.emit("shortcut-save-triggered", ());
+                                } else if shortcut == &open_shortcut {
+                                    let _ = app_handle.emit("shortcut-open-triggered", ());
+                                }
                             }
                         })
                         .build(),
                 )?;
 
                 app.global_shortcut().register(save_shortcut)?;
+                app.global_shortcut().register(open_shortcut)?;
             }
 
             Ok(())

@@ -247,6 +247,8 @@ Required permissions (added automatically by `tauri add dialog`):
 - Rust 2024 edition, TypeScript 5.6 + `@tauri-apps/api/menu`, `@tauri-apps/plugin-global-shortcut`, `tauri-plugin-global-shortcut`, `@tauri-apps/plugin-dialog`, `tauri-plugin-dialog` (002-add-save-menu)
 - Platform-dependent shortcuts: `CmdOrControl` accelerator syntax + `#[cfg(target_os)]` conditional compilation (002-add-save-menu)
 - Local filesystem (JSON/Excalidraw format via native save dialog) (002-add-save-menu)
+- TypeScript 5.6, Rust 2024 edition (Tauri v2) + `@tauri-apps/plugin-dialog`, `@tauri-apps/api/core`, `@excalidraw/excalidraw` (003-open-file)
+- Local filesystem (JSON/.excalidraw files) (003-open-file)
 
 ## Recent Changes
 - 001-auto-create-excalidraw: Added TypeScript 5.6, Rust edition 2024 (Tauri v2) + React 18, @excalidraw/excalidraw (to be added), @tauri-apps/api v2
