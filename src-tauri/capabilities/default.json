@@ -37,6 +37,14 @@
           "windows": ["main", "excalidraw-*"]
         }
       ]
+    },
+    {
+      "identifier": "core:window:allow-close",
+      "allow": [
+        {
+          "windows": ["main", "excalidraw-*"]
+        }
+      ]
     }
   ],
   "platforms": [

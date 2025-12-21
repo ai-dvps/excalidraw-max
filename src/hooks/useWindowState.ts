@@ -10,7 +10,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import type { WindowState } from '../types/windowState';
 
 // Module-level state store (per window)
-const windowStates: Map<string, WindowState> = new Map();
+export const windowStates: Map<string, WindowState> = new Map();
 const stateListeners: Map<string, Set<(state: WindowState) => void>> = new Map();
 
 /**
