@@ -39,9 +39,21 @@ export const openService = {
     });
 
     // Listen for shortcut-triggered opens (from global-shortcut plugin)
-    const unlistenShortcutOpen = listen('shortcut-open-triggered', () => {
+    // Only respond if this window is focused
+    const unlistenShortcutOpen = listen('shortcut-open-triggered', async () => {
       console.log('Shortcut open triggered');
-      this.triggerOpen();
+
+      // Check if this window is focused before opening
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const currentWindow = getCurrentWindow();
+      const isFocused = await currentWindow.isFocused();
+
+      if (isFocused) {
+        console.log('Window is focused, proceeding with open');
+        this.triggerOpen();
+      } else {
+        console.log('Window is not focused, ignoring shortcut');
+      }
     });
 
     listeners.push(

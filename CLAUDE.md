@@ -250,6 +250,66 @@ const filePath = await open({
 Required permissions (added automatically by `tauri add dialog`):
 - `dialog:default` in `capabilities/default.json`
 
+## Excalidraw Integration
+
+### Loading Drawings Dynamically
+
+The `initialData` prop only works when Excalidraw is first mounted. For dynamic loading (e.g., opening files in new windows), use the `updateScene` API:
+
+```typescript
+// Get Excalidraw API via excalidrawAPI prop
+const handleExcalidrawAPI = useCallback((api: any) => {
+  excalidrawAPI.current = api;
+}, []);
+
+// Use updateScene to load data
+excalidrawAPI.current.updateScene({
+  elements: drawingData.elements || [],
+  appState: drawingData.appState || {},
+  files: drawingData.files || {},
+  captureUpdate: 'IMMEDIATELY', // or 'EVENTUALLY' or 'NEVER'
+});
+```
+
+**captureUpdate options:**
+- `IMMEDIATELY` - Captured in undo/redo stack (use for most local updates)
+- `EVENTUALLY` - For async multi-step processes
+- `NEVER` - Not recorded (remote updates, scene initialization)
+
+**Important:** The `initialData` prop only takes effect on initial mount. If data changes after the component is mounted, you MUST use `updateScene` to reflect those changes.
+
+### Loading Data After Excalidraw API is Ready
+
+When loading data asynchronously (e.g., from file open), you need to handle the case where the Excalidraw API isn't available yet:
+
+```typescript
+useEffect(() => {
+  const loadDrawing = () => {
+    if (drawingData && excalidrawAPI.current) {
+      excalidrawAPI.current.updateScene({
+        elements: drawingData.elements || [],
+        appState: drawingData.appState || {},
+        files: drawingData.files || {},
+        captureUpdate: 'IMMEDIATELY',
+      });
+    }
+  };
+
+  // Try immediately
+  loadDrawing();
+
+  // Poll if API not yet available
+  const checkInterval = setInterval(() => {
+    if (drawingData && excalidrawAPI.current) {
+      loadDrawing();
+      clearInterval(checkInterval);
+    }
+  }, 50);
+
+  return () => clearInterval(checkInterval);
+}, [drawingData]);
+```
+
 ## Multi-Window Configuration
 
 ### DevTools for All Windows
