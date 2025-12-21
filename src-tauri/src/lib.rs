@@ -1,7 +1,11 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 
-use commands::save_commands::{mark_unsaved, save_drawing, AppSaveState};
+use commands::save_commands::{mark_unsaved, save_drawing, AppSaveState, AppState, WindowStateRust};
 use commands::open_commands::{read_drawing_file, create_window_with_data};
+use commands::state_commands::{
+    get_window_state, update_window_state, mark_window_saved, mark_window_edited,
+    confirm_close_with_unsaved, reset_window_created,
+};
 use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
 use tauri::{Emitter, Manager};
 
@@ -142,10 +146,28 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, save_drawing, mark_unsaved, read_drawing_file, create_window_with_data])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            save_drawing,
+            mark_unsaved,
+            read_drawing_file,
+            create_window_with_data,
+            get_window_state,
+            update_window_state,
+            mark_window_saved,
+            mark_window_edited,
+            confirm_close_with_unsaved,
+            reset_window_created
+        ])
         .setup(|app| {
             // Initialize save state
             app.manage(AppSaveState(Default::default()));
+
+            // Initialize window states for state machine
+            app.manage(AppState {
+                save: std::sync::Mutex::new(commands::save_commands::SaveStateRust::default()),
+                window_states: std::sync::Mutex::new(std::collections::HashMap::new()),
+            });
 
             // Open devtools for main window
             if let Some(window) = app.get_webview_window("main") {

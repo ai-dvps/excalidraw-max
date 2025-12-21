@@ -9,3 +9,9 @@ pub mod save_commands;
 /// This module provides Tauri commands for opening drawings from the local filesystem.
 
 pub mod open_commands;
+
+/// State commands for window state management.
+///
+/// This module provides Tauri commands for managing window save state.
+
+pub mod state_commands;

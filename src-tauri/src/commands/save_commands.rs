@@ -3,6 +3,7 @@
 //! This module provides Tauri commands for saving drawings to the local filesystem.
 
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::PathBuf;
 use tauri::Manager;
 use tauri::{AppHandle, Emitter};
@@ -26,6 +27,51 @@ pub struct SaveDrawingRequest {
     /// The file path to save to (from frontend file dialog).
     #[serde(default)]
     pub file_path: Option<String>,
+}
+
+/// Window state for the state machine
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct WindowStateRust {
+    pub state: String,
+    pub file_path: Option<String>,
+    pub last_saved_at: Option<String>,
+    pub has_unsaved_changes: bool,
+}
+
+/// Mutable save state managed by the application.
+#[derive(Debug, Default)]
+pub struct AppSaveState(pub std::sync::Mutex<SaveStateRust>);
+
+/// Application state that includes both save state and window states
+#[derive(Debug, Default)]
+pub struct AppState<S = SaveStateRust> {
+    pub save: std::sync::Mutex<S>,
+    pub window_states: std::sync::Mutex<HashMap<String, WindowStateRust>>,
+}
+
+/// Type alias for app state with window states
+pub type AppWindowStates = AppState<SaveStateRust>;
+
+/// Rust-side save state representation.
+#[derive(Clone, Debug, Default)]
+pub struct SaveStateRust {
+    /// Whether there are unsaved changes.
+    pub has_unsaved_changes: bool,
+    /// Current file path (null if never saved).
+    pub current_file_path: Option<String>,
+    /// Last saved timestamp.
+    pub last_saved_at: Option<String>,
+    /// Whether a save operation is in progress.
+    pub is_saving: bool,
+}
+
+/// Get the current save state from the app's managed state.
+#[tauri::command]
+pub fn get_save_state(app: AppHandle) -> Result<SaveStateRust, String> {
+    // Access state managed by the application
+    let state = app.state::<AppSaveState>();
+    let guard = state.0.lock().map_err(|_| "Failed to lock state")?;
+    Ok(guard.clone())
 }
 
 /// Save the drawing to a file.
@@ -102,32 +148,6 @@ pub async fn save_drawing(
             })
         }
     }
-}
-
-/// Mutable save state managed by the application.
-#[derive(Debug, Default)]
-pub struct AppSaveState(pub std::sync::Mutex<SaveStateRust>);
-
-/// Rust-side save state representation.
-#[derive(Clone, Debug, Default)]
-pub struct SaveStateRust {
-    /// Whether there are unsaved changes.
-    pub has_unsaved_changes: bool,
-    /// Current file path (null if never saved).
-    pub current_file_path: Option<String>,
-    /// Last saved timestamp.
-    pub last_saved_at: Option<String>,
-    /// Whether a save operation is in progress.
-    pub is_saving: bool,
-}
-
-/// Get the current save state from the app's managed state.
-#[tauri::command]
-pub fn get_save_state(app: AppHandle) -> Result<SaveStateRust, String> {
-    // Access state managed by the application
-    let state = app.state::<AppSaveState>();
-    let guard = state.0.lock().map_err(|_| "Failed to lock state")?;
-    Ok(guard.clone())
 }
 
 /// Mark the drawing as having unsaved changes.

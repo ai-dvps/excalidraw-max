@@ -21,6 +21,22 @@
           "windows": ["excalidraw-*"]
         }
       ]
+    },
+    {
+      "identifier": "core:window:allow-set-title",
+      "allow": [
+        {
+          "windows": ["main", "excalidraw-*"]
+        }
+      ]
+    },
+    {
+      "identifier": "core:window:allow-destroy",
+      "allow": [
+        {
+          "windows": ["main", "excalidraw-*"]
+        }
+      ]
     }
   ],
   "platforms": [

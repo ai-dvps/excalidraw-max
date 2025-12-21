@@ -5,6 +5,8 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { useSaveState } from './SaveStateContext';
 import { saveService } from '../services/saveService';
 import { useFileLoader } from '../hooks/useFileLoader';
+import { useWindowState } from '../hooks/useWindowState';
+import { useWindowCloseHandler } from '../hooks/useWindowCloseHandler';
 import type { InitialData } from '../types/open';
 
 // Type for Excalidraw API - using any to avoid type import issues
@@ -29,6 +31,12 @@ interface ExcalidrawCanvasProps {
 export function ExcalidrawCanvas({ initialData: propInitialData }: ExcalidrawCanvasProps): React.ReactElement {
   const excalidrawAPI = useRef<ExcalidrawAPI | null>(null);
   const { markUnsaved } = useSaveState();
+
+  // Window state hook for state machine
+  const { setEdited } = useWindowState();
+
+  // Window close handler for unsaved changes confirmation
+  useWindowCloseHandler();
 
   // Use file loader hook to get initial data from file open operation
   const { initialData: fileInitialData, error: fileError } = useFileLoader();
@@ -103,10 +111,12 @@ export function ExcalidrawCanvas({ initialData: propInitialData }: ExcalidrawCan
 
   const handleChange = useCallback(
     (_elements: any, _appState: any, _files: any) => {
-      // Mark as unsaved when canvas changes
+      // Mark as unsaved when canvas changes (legacy save service)
       markUnsaved();
+      // Update window state to "edited" (new state machine)
+      setEdited();
     },
-    [markUnsaved]
+    [markUnsaved, setEdited]
   );
 
   const handleExcalidrawAPI = useCallback((api: ExcalidrawAPI) => {

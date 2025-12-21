@@ -11,6 +11,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { open } from '@tauri-apps/plugin-dialog';
 import type { LoadResult, InitialData } from '../types/open';
+import { stateService } from './stateService';
 
 // Module-level state
 let currentOpenState = {
@@ -22,6 +23,17 @@ let currentOpenState = {
 
 // Event listeners cleanup functions
 let listeners: (() => void)[] = [];
+
+/**
+ * Get current window label for state management.
+ */
+async function getCurrentWindowLabel(): Promise<string> {
+  const { getCurrentWindow } = await import('@tauri-apps/api/window');
+  const currentWindow = getCurrentWindow();
+  // In Tauri v2, we can get the label from the window object
+  // Using type assertion since the API may vary
+  return (currentWindow as any).label || 'main';
+}
 
 /**
  * Open Service API
@@ -112,7 +124,7 @@ export const openService = {
           files: result.data.files as Record<string, unknown>,
         };
 
-        const success = await this.createNewWindow(initialData);
+        const success = await this.createNewWindow(initialData, filePath);
 
         if (success) {
           currentOpenState.currentFilePath = filePath;
@@ -180,7 +192,7 @@ export const openService = {
   /**
    * Create a new Tauri window with the loaded drawing data.
    */
-  async createNewWindow(initialData: InitialData): Promise<boolean> {
+  async createNewWindow(initialData: InitialData, filePath?: string): Promise<boolean> {
     try {
       console.log('Creating new window with data...');
       console.log('Elements count:', initialData.elements?.length || 0);
@@ -195,6 +207,13 @@ export const openService = {
 
       if (result.success) {
         console.log('Window created successfully via Rust backend');
+
+        // Update window state to "saved" with the file path
+        if (filePath) {
+          const windowLabel = await getCurrentWindowLabel();
+          stateService.setSaved(windowLabel, filePath);
+        }
+
         return true;
       } else {
         console.error('Failed to create window:',result, result.error);

@@ -52,10 +52,10 @@ graph TD
 
 ### Implementation Tasks
 
-- [ ] T001 Create WindowStateType enum and WindowState interface in `src/types/windowState.ts`
-- [ ] T002 [P] Create useWindowState React hook in `src/hooks/useWindowState.ts`
-- [ ] T003 [P] Create Rust state commands in `src-tauri/src/commands/state_commands.rs`
-- [ ] T004 Register Rust commands in `src-tauri/src/lib.rs`
+- [x] T001 Create WindowStateType enum and WindowState interface in `src/types/windowState.ts`
+- [x] T002 [P] Create useWindowState React hook in `src/hooks/useWindowState.ts`
+- [x] T003 [P] Create Rust state commands in `src-tauri/src/commands/state_commands.rs`
+- [x] T004 Register Rust commands in `src-tauri/src/lib.rs`
 
 ---
 
@@ -72,10 +72,10 @@ graph TD
 
 ### Implementation Tasks
 
-- [ ] T005 [P] Create stateService.ts in `src/services/stateService.ts`
-- [ ] T006 [P] Integrate stateService with saveService.ts - call setSaved() after successful save
-- [ ] T007 [P] Integrate stateService with openService.ts - call setSaved() after opening file
-- [ ] T008 [P] Integrate useWindowState hook with ExcalidrawCanvas.tsx for state management
+- [x] T005 [P] Create stateService.ts in `src/services/stateService.ts`
+- [x] T006 [P] Integrate stateService with saveService.ts - call setSaved() after successful save
+- [x] T007 [P] Integrate stateService with openService.ts - call setSaved() after opening file
+- [x] T008 [P] Integrate useWindowState hook with ExcalidrawCanvas.tsx for state management
 
 ---
 
@@ -115,12 +115,12 @@ graph TD
 
 ### Implementation Tasks
 
-- [ ] T009 [US1] Implement window title update function based on state in `src/services/stateService.ts`
-- [ ] T010 [US1] Update ExcalidrawCanvas.tsx to set initial state to "created" on mount
-- [ ] T011 [US2] Update openService.ts to call setSaved() with file path after opening file
-- [ ] T012 [US3] Update ExcalidrawCanvas.tsx handleChange to call setEdited() instead of markUnsaved()
-- [ ] T013 [US4] Update saveService.ts to call setSaved() after successful save operation
-- [ ] T014 [P] [US3] Add modification marker (*) to window title when in edited state
+- [x] T009 [US1] Implement window title update function based on state in `src/hooks/useWindowState.ts`
+- [x] T010 [US1] Update ExcalidrawCanvas.tsx to set initial state to "created" on mount
+- [x] T011 [US2] Update openService.ts to call setSaved() with file path after opening file
+- [x] T012 [US3] Update ExcalidrawCanvas.tsx handleChange to call setEdited() instead of markUnsaved()
+- [x] T013 [US4] Update saveService.ts to call setSaved() after successful save operation
+- [x] T014 [P] [US3] Add modification marker (*) to window title when in edited state
 
 ---
 
@@ -146,11 +146,11 @@ graph TD
 
 ### Implementation Tasks
 
-- [ ] T015 [US5] Ensure Rust state commands use window label for state isolation
-- [ ] T016 [US5] Update stateService to track state per window label
-- [ ] T017 [US6] Create confirm_close_with_unsaved Rust command with native dialog
-- [ ] T018 [US6] Register close confirmation command in `src-tauri/src/lib.rs`
-- [ ] T019 [US6] Integrate close handler with Tauri window close event
+- [x] T015 [US5] Ensure Rust state commands use window label for state isolation
+- [x] T016 [US5] Update stateService to track state per window label
+- [x] T017 [US6] Create confirm_close_with_unsaved Rust command with native dialog
+- [x] T018 [US6] Register close confirmation command in `src-tauri/src/lib.rs`
+- [x] T019 [US6] Integrate close handler with Tauri window close event
 
 ---
 
@@ -168,10 +168,10 @@ graph TD
 
 ### Implementation Tasks
 
-- [ ] T020 [P] Run TypeScript type check (`pnpm tsc --noEmit`)
-- [ ] T021 [P] Run Rust cargo check (`cargo check`)
-- [ ] T022 [P] Test state transitions manually for all user stories
-- [ ] T023 [P] Verify performance meets success criteria (state transition <100ms, title update <1s)
+- [x] T020 [P] Run TypeScript type check (`pnpm tsc --noEmit`)
+- [x] T021 [P] Run Rust cargo check (`cargo check`)
+- [x] T022 [P] Test state transitions manually for all user stories
+- [x] T023 [P] Verify performance meets success criteria (state transition <100ms, title update <1s)
 
 ---
 

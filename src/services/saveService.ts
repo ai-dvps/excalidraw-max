@@ -10,6 +10,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { save } from '@tauri-apps/plugin-dialog';
 import type { SaveState, SaveResult } from '../types/save';
+import { stateService } from './stateService';
 
 // Module-level state
 let currentSaveState: SaveState = {
@@ -21,6 +22,17 @@ let currentSaveState: SaveState = {
 
 // Event listeners cleanup functions
 let listeners: (() => void)[] = [];
+
+/**
+ * Get current window label for state management.
+ */
+async function getCurrentWindowLabel(): Promise<string> {
+  const { getCurrentWindow } = await import('@tauri-apps/api/window');
+  const currentWindow = getCurrentWindow();
+  // In Tauri v2, we can get the label from the window object
+  // Using type assertion since the API may vary
+  return (currentWindow as any).label || 'main';
+}
 
 /**
  * Get drawing data from the stored getter or return empty data.
@@ -138,6 +150,11 @@ export const saveService = {
         currentSaveState.lastSavedAt = new Date().toISOString();
         currentSaveState.hasUnsavedChanges = false;
         console.log('Drawing saved to:', result.filePath);
+
+        // Update window state to "saved"
+        const windowLabel = await getCurrentWindowLabel();
+        stateService.setSaved(windowLabel, result.filePath);
+
         return true;
       } else {
         if (result.error) {
@@ -190,6 +207,11 @@ export const saveService = {
         currentSaveState.lastSavedAt = new Date().toISOString();
         currentSaveState.hasUnsavedChanges = false;
         console.log('Drawing saved to:', result.filePath);
+
+        // Update window state to "saved"
+        const windowLabel = await getCurrentWindowLabel();
+        stateService.setSaved(windowLabel, result.filePath);
+
         return true;
       } else {
         if (result.error) {
