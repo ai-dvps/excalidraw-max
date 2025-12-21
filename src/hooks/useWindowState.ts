@@ -30,7 +30,13 @@ function getInitialState(): WindowState {
  */
 function updateState(label: string, updates: Partial<WindowState>): WindowState {
   const current = windowStates.get(label) || getInitialState();
+  const previousState = current.state;
   const newState = { ...current, ...updates };
+  const newStateType = newState.state;
+
+  // Log state transition
+  console.log(`[Window State] ${label}: [${previousState}] → [${newStateType}]`);
+
   windowStates.set(label, newState);
 
   // Notify listeners
