@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useEffect, useState } from 'react';
 import { Excalidraw } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -19,7 +19,7 @@ type ExcalidrawAPI = any;
  * - Full-window container sizing
  * - Error boundary with retry button on initialization failure
  * - Save integration via menu and keyboard shortcut
- * - File loading via open dialog (initialData passed as prop or loaded from window)
+ * - File loading via open dialog (uses updateScene API for dynamic loading)
  */
 interface ExcalidrawCanvasProps {
   /** Initial drawing data to load (optional) */
@@ -36,6 +36,54 @@ export function ExcalidrawCanvas({ initialData: propInitialData }: ExcalidrawCan
   // Use prop data if provided, otherwise use file loader data
   const initialData = propInitialData ?? fileInitialData ?? null;
 
+  // Track if data has been loaded to prevent duplicate loads
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  // Load drawing when both initialData is available AND Excalidraw API is ready
+  useEffect(() => {
+    console.log('updateScene effect running:', {
+      hasInitialData: !!initialData,
+      hasApi: !!excalidrawAPI.current,
+      dataLoaded,
+      elementsCount: initialData?.elements?.length || 0,
+    });
+
+    const loadDrawing = () => {
+      if (initialData && excalidrawAPI.current && !dataLoaded) {
+        console.log('Loading drawing via updateScene:', {
+          elementsCount: initialData.elements?.length || 0,
+          hasAppState: !!initialData.appState && Object.keys(initialData.appState).length > 0,
+        });
+
+        // Use updateScene API to load the data
+        excalidrawAPI.current.updateScene({
+          elements: initialData.elements || [],
+          appState: initialData.appState || {},
+          files: initialData.files || {},
+          captureUpdate: 'IMMEDIATELY' as any,
+        });
+
+        setDataLoaded(true);
+        console.log('Drawing loaded successfully');
+      }
+    };
+
+    // Try to load immediately
+    loadDrawing();
+
+    // Also set up an observer in case API becomes available later
+    const checkInterval = setInterval(() => {
+      if (!dataLoaded && excalidrawAPI.current && initialData) {
+        console.log('Retrying load - API now available');
+        loadDrawing();
+        clearInterval(checkInterval);
+      }
+    }, 50);
+
+    // Clear interval on cleanup
+    return () => clearInterval(checkInterval);
+  }, [initialData, dataLoaded]);
+
   // Get drawing data from Excalidraw for save operations
   const getDrawingData = useCallback(async () => {
     if (excalidrawAPI.current) {
@@ -49,7 +97,7 @@ export function ExcalidrawCanvas({ initialData: propInitialData }: ExcalidrawCan
   }, []);
 
   // Set up drawing data getter for save service
-  React.useEffect(() => {
+  useEffect(() => {
     saveService.setDrawingDataGetter(getDrawingData);
   }, [getDrawingData]);
 
@@ -63,6 +111,7 @@ export function ExcalidrawCanvas({ initialData: propInitialData }: ExcalidrawCan
 
   const handleExcalidrawAPI = useCallback((api: ExcalidrawAPI) => {
     excalidrawAPI.current = api;
+    console.log('Excalidraw API available');
   }, []);
 
   return (
@@ -90,7 +139,8 @@ export function ExcalidrawCanvas({ initialData: propInitialData }: ExcalidrawCan
           </div>
         ) : (
           <Excalidraw
-            initialData={initialData as any}
+            // Use null for initialData since we load via updateScene
+            initialData={null}
             onChange={handleChange}
             excalidrawAPI={handleExcalidrawAPI}
             UIOptions={{

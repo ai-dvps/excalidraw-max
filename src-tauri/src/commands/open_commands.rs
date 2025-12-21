@@ -26,6 +26,7 @@ pub struct ExcalidrawFile {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DrawingData {
     pub elements: Vec<serde_json::Value>,
+    #[serde(rename = "appState")]
     pub app_state: serde_json::Value,
     pub files: serde_json::Value,
 }

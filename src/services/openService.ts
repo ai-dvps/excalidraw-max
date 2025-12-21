@@ -171,11 +171,14 @@ export const openService = {
   async createNewWindow(initialData: InitialData): Promise<boolean> {
     try {
       console.log('Creating new window with data...');
+      console.log('Elements count:', initialData.elements?.length || 0);
+      console.log('AppState:', initialData.appState);
+      console.log('Files:', initialData.files ? 'present' : 'empty');
 
       const result = await invoke<{ success: boolean; error?: string }>('create_window_with_data', {
-        elements: initialData.elements,
-        appState: {...initialData.appState},
-        files: initialData.files,
+        elements: initialData.elements || [],
+        appState: initialData.appState || {},
+        files: initialData.files || {},
       });
 
       if (result.success) {
