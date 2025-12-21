@@ -155,21 +155,37 @@ pub fn create_window_with_data(
     .inner_size(1000.0, 700.0)
     .resizable(true)
     .center()
+    .devtools(true)
     .build()
     {
         Ok(window) => {
             println!("Window created successfully: {}", window_label);
 
-            // Clone data for the closure
-            let window_label = window.label().to_string();
-            let data = drawing_data.clone();
+            // Open devtools for debugging
+            let _ = window.open_devtools();
 
-            // Use set_timeout style approach via tauri::api::process::Command
-            // For simplicity, just emit the event immediately
-            if let Err(e) = window.emit("load-canvas-data", data) {
-                println!("Failed to emit load-canvas-data: {}", e);
+            // Clone data for the JavaScript injection
+            let data = drawing_data.clone();
+            let data_json = serde_json::to_string(&data).unwrap_or_default();
+
+            // Inject data directly into the new window's JavaScript context
+            // This is more reliable than events for initial data
+            let js_code = format!(
+                r#"
+                (function() {{
+                    window.__excalidrawInitialData = {};
+                    console.log('Initial data set from Rust');
+                }})();
+                "#,
+                data_json
+            );
+
+            if let Err(e) = window.eval(&js_code) {
+                println!("Failed to inject initial data: {}", e);
+                // Fallback: emit event
+                let _ = window.emit("load-canvas-data", data);
             } else {
-                println!("Canvas data sent to window: {}", window_label);
+                println!("Initial data injected into window: {}", window_label);
             }
 
             Ok(WindowResult { success: true, error: None })

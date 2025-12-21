@@ -147,6 +147,11 @@ pub fn run() {
             // Initialize save state
             app.manage(AppSaveState(Default::default()));
 
+            // Open devtools for main window
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.open_devtools();
+            }
+
             // Create application menu with Save item
             create_app_menu(app)?;
 
