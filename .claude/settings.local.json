@@ -22,7 +22,9 @@
       "Bash(lsof:*)",
       "Bash(xargs:*)",
       "Bash(pnpm tauri:*)",
-      "WebFetch(domain:tauritutorials.com)"
+      "WebFetch(domain:tauritutorials.com)",
+      "Bash(git checkout:*)",
+      "SlashCommand(/speckit.tasks)"
     ]
   }
 }
