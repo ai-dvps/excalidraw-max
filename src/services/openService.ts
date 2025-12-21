@@ -182,7 +182,7 @@ export const openService = {
         console.log('Window created successfully via Rust backend');
         return true;
       } else {
-        console.error('Failed to create window:', result.error);
+        console.error('Failed to create window:',result, result.error);
         currentOpenState.error = result.error || 'Unknown error';
         return false;
       }

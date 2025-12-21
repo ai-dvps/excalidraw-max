@@ -116,15 +116,22 @@ pub async fn read_drawing_file(_app: AppHandle, path: String) -> Result<LoadResu
     })
 }
 
+/// Result of window creation.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct WindowResult {
+    pub success: bool,
+    pub error: Option<String>,
+}
+
 /// Create a new window with the given drawing data.
 /// This is more reliable than creating windows from the frontend.
 #[tauri::command()]
 pub fn create_window_with_data(
     _app: AppHandle,
     elements: Vec<serde_json::Value>,
-    appState: serde_json::Value,
+    app_state: serde_json::Value,
     files: serde_json::Value
-) -> Result<bool, String> {
+) -> Result<WindowResult, String> {
     // Generate unique window label
     let window_count = _app.webview_windows().len();
     let window_label = format!("excalidraw-{}", window_count);
@@ -134,7 +141,7 @@ pub fn create_window_with_data(
     // Create drawing data
     let drawing_data = DrawingData {
         elements,
-        app_state: appState,
+        app_state,
         files,
     };
 
@@ -165,11 +172,11 @@ pub fn create_window_with_data(
                 println!("Canvas data sent to window: {}", window_label);
             }
 
-            Ok(true)
+            Ok(WindowResult { success: true, error: None })
         }
         Err(e) => {
             println!("Failed to create window: {}", e);
-            Err(format!("Failed to create window: {}", e))
+            Ok(WindowResult { success: false, error: Some(e.to_string()) })
         }
     }
 }
