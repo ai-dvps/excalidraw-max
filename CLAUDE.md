@@ -250,6 +250,99 @@ const filePath = await open({
 Required permissions (added automatically by `tauri add dialog`):
 - `dialog:default` in `capabilities/default.json`
 
+## Multi-Window Configuration
+
+### DevTools for All Windows
+
+Enable devtools for debugging across all windows:
+
+**1. Add `devtools` feature to Cargo.toml:**
+```toml
+[dependencies]
+tauri = { version = "2", features = ["macos-private-api", "devtools"] }
+```
+
+**2. Enable in tauri.conf.json for main window:**
+```json
+{
+  "app": {
+    "windows": [
+      {
+        "title": "exalidraw-max",
+        "width": 800,
+        "height": 600,
+        "label": "main",
+        "devtools": true
+      }
+    ]
+  }
+}
+```
+
+**3. Open devtools programmatically in Rust:**
+
+For main window (in `setup` function):
+```rust
+// In setup() function
+if let Some(window) = app.get_webview_window("main") {
+    let _ = window.open_devtools();
+}
+```
+
+For new windows (in WebviewWindowBuilder):
+```rust
+use tauri::{WebviewUrl, WebviewWindowBuilder};
+
+WebviewWindowBuilder::new(
+    &app,
+    &window_label,
+    WebviewUrl::App("index.html".into()),
+)
+.title("Excalidraw")
+.inner_size(1000.0, 700.0)
+.devtools(true)
+.build()?;
+
+// Or open programmatically after creation
+let _ = window.open_devtools();
+```
+
+### Multi-Window Permissions
+
+Tauri v2 requires explicit permissions for each window. Use wildcard patterns for dynamic windows.
+
+**capabilities/default.json:**
+```json
+{
+  "windows": [
+    "main",
+    "excalidraw-*"
+  ],
+  "permissions": [
+    "core:default",
+    "opener:default",
+    "dialog:default",
+    "global-shortcut:default",
+    {
+      "identifier": "core:event:allow-listen",
+      "allow": [
+        {
+          "windows": ["excalidraw-*"]
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Key patterns:**
+- `"main"` - Explicit window label
+- `"excalidraw-*"` - Wildcard pattern for dynamically created windows
+- Permissions scoped to specific windows use the `allow` array with `windows` key
+
+**Common error:** `event.listen not allowed on window "excalidraw-1"`
+- Fix: Add `core:event:allow-listen` permission with scoped windows
+
 ## Frontend
 
 - **React 18** with JSX
