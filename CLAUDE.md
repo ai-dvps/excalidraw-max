@@ -78,7 +78,7 @@ Permissions are configured in `src-tauri/capabilities/default.json`:
 
 To add a new Tauri command in Rust:
 
-1. Add the function with `#[tauri::command]` macro in `src-tauri/src/lib.rs`
+1. Add the function with `#[tauri::command]` macro in `src-tauri/src/lib.rs` or a commands module
 2. Register it in the `run` function builder
 3. Import and use it in the frontend via `@tauri-apps/api/core`
 
@@ -92,6 +92,37 @@ fn my_command(arg: String) -> String {
 // In the run() builder:
 // .invoke_handler(tauri::generate_handler![greet, my_command])
 ```
+
+### Tauri Command Parameter Naming Convention
+
+**Important:** Tauri automatically converts parameter names between Rust and JavaScript:
+
+- **Rust parameters**: Use `snake_case` (e.g., `app_state`, `file_path`)
+- **Frontend invoke()**: Use `camelCase` (e.g., `appState`, `filePath`)
+
+Example mismatch that causes errors:
+```rust
+// Rust - uses app_state (snake_case)
+pub fn create_window_with_data(
+    _app: AppHandle,
+    elements: Vec<serde_json::Value>,
+    app_state: serde_json::Value,  // snake_case
+    files: serde_json::Value
+) -> Result<WindowResult, String> { ... }
+```
+
+```typescript
+// Frontend - MUST use appState (camelCase) and SPREAD the object
+const result = await invoke('create_window_with_data', {
+  elements: initialData.elements,
+  appState: {...initialData.appState},  // Spread to ensure proper serialization
+  files: initialData.files,
+});
+```
+
+**Why spread?** Direct assignment like `appState: initialData.appState` may cause serialization issues with nested objects. Always use `{...object}` spread syntax for nested objects.
+
+If you get the error "missing required key appState", check that the frontend is using camelCase while Rust uses snake_case.
 
 ## Menu & Shortcuts
 
