@@ -44,19 +44,9 @@ export const openService = {
       this.triggerOpen();
     });
 
-    // Listen for load-canvas-data event (when new window is ready)
-    const unlistenLoadData = listen<InitialData>('load-canvas-data', (event) => {
-      console.log('Load canvas data received:', event.payload);
-      // Store the data for the canvas to pick up
-      if (typeof window !== 'undefined') {
-        (window as any).__excalidrawInitialData = event.payload;
-      }
-    });
-
     listeners.push(
       () => unlistenMenuOpen.then((fn) => fn()),
-      () => unlistenShortcutOpen.then((fn) => fn()),
-      () => unlistenLoadData.then((fn) => fn())
+      () => unlistenShortcutOpen.then((fn) => fn())
     );
 
     // Return cleanup function
@@ -180,29 +170,22 @@ export const openService = {
    */
   async createNewWindow(initialData: InitialData): Promise<boolean> {
     try {
-      // Import WebviewWindow dynamically to avoid issues
-      const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
+      console.log('Creating new window with data...');
 
-      // Generate unique window label
-      const timestamp = Date.now();
-      const windowLabel = `excalidraw-${timestamp}`;
-
-      // Create new window
-      const window = new WebviewWindow(windowLabel, {
-        url: '/',
-        title: 'Excalidraw',
-        width: 800,
-        height: 600,
+      const result = await invoke<{ success: boolean; error?: string }>('create_window_with_data', {
+        elements: initialData.elements,
+        appState: {...initialData.appState},
+        files: initialData.files,
       });
 
-      // Wait for window to be created, then send data
-      window.once('tauri://created', () => {
-        console.log('Window created, sending canvas data');
-        window.emit('load-canvas-data', initialData);
-      });
-
-      console.log('New window created:', windowLabel);
-      return true;
+      if (result.success) {
+        console.log('Window created successfully via Rust backend');
+        return true;
+      } else {
+        console.error('Failed to create window:', result.error);
+        currentOpenState.error = result.error || 'Unknown error';
+        return false;
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('Failed to create window:', errorMessage);

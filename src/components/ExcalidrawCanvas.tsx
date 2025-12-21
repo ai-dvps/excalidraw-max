@@ -31,7 +31,7 @@ export function ExcalidrawCanvas({ initialData: propInitialData }: ExcalidrawCan
   const { markUnsaved } = useSaveState();
 
   // Use file loader hook to get initial data from file open operation
-  const { initialData: fileInitialData, isLoading: isLoadingFile, error: fileError } = useFileLoader();
+  const { initialData: fileInitialData, error: fileError } = useFileLoader();
 
   // Use prop data if provided, otherwise use file loader data
   const initialData = propInitialData ?? fileInitialData ?? null;
@@ -74,20 +74,7 @@ export function ExcalidrawCanvas({ initialData: propInitialData }: ExcalidrawCan
           overflow: 'hidden',
         }}
       >
-        {isLoadingFile ? (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '100%',
-              fontSize: '16px',
-              color: '#666',
-            }}
-          >
-            Loading drawing...
-          </div>
-        ) : fileError ? (
+        {fileError ? (
           <div
             style={{
               display: 'flex',

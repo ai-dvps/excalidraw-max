@@ -1,10 +1,10 @@
 //! Open commands for reading Excalidraw files.
 //!
-//! Provides Tauri commands for reading and validating Excalidraw JSON files.
+//! Provides Tauri commands for reading and creating windows with Excalidraw files.
 
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 
 /// Result of loading an Excalidraw file.
 #[derive(Debug, Serialize, Deserialize)]
@@ -15,17 +15,19 @@ pub struct LoadResult {
 }
 
 /// Excalidraw file data structure.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ExcalidrawFile {
     pub elements: Vec<serde_json::Value>,
     pub app_state: serde_json::Value,
     pub files: serde_json::Value,
 }
 
-/// Request payload for read_drawing_file command.
-#[derive(Deserialize)]
-pub struct ReadDrawingRequest {
-    pub path: String,
+/// Drawing data to pass to new window.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DrawingData {
+    pub elements: Vec<serde_json::Value>,
+    pub app_state: serde_json::Value,
+    pub files: serde_json::Value,
 }
 
 /// Read an Excalidraw file from the local filesystem.
@@ -112,4 +114,62 @@ pub async fn read_drawing_file(_app: AppHandle, path: String) -> Result<LoadResu
         }),
         error: None,
     })
+}
+
+/// Create a new window with the given drawing data.
+/// This is more reliable than creating windows from the frontend.
+#[tauri::command()]
+pub fn create_window_with_data(
+    _app: AppHandle,
+    elements: Vec<serde_json::Value>,
+    appState: serde_json::Value,
+    files: serde_json::Value
+) -> Result<bool, String> {
+    // Generate unique window label
+    let window_count = _app.webview_windows().len();
+    let window_label = format!("excalidraw-{}", window_count);
+
+    println!("Creating new window with label: {}", window_label);
+
+    // Create drawing data
+    let drawing_data = DrawingData {
+        elements,
+        app_state: appState,
+        files,
+    };
+
+    // Create new window
+    match WebviewWindowBuilder::new(
+        &_app,
+        &window_label,
+        WebviewUrl::App("index.html".into()),
+    )
+    .title("Excalidraw")
+    .inner_size(1000.0, 700.0)
+    .resizable(true)
+    .center()
+    .build()
+    {
+        Ok(window) => {
+            println!("Window created successfully: {}", window_label);
+
+            // Clone data for the closure
+            let window_label = window.label().to_string();
+            let data = drawing_data.clone();
+
+            // Use set_timeout style approach via tauri::api::process::Command
+            // For simplicity, just emit the event immediately
+            if let Err(e) = window.emit("load-canvas-data", data) {
+                println!("Failed to emit load-canvas-data: {}", e);
+            } else {
+                println!("Canvas data sent to window: {}", window_label);
+            }
+
+            Ok(true)
+        }
+        Err(e) => {
+            println!("Failed to create window: {}", e);
+            Err(format!("Failed to create window: {}", e))
+        }
+    }
 }

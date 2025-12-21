@@ -1,7 +1,7 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 
 use commands::save_commands::{mark_unsaved, save_drawing, AppSaveState};
-use commands::open_commands::read_drawing_file;
+use commands::open_commands::{read_drawing_file, create_window_with_data};
 use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
 use tauri::{Emitter, Manager};
 
@@ -142,7 +142,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, save_drawing, mark_unsaved, read_drawing_file])
+        .invoke_handler(tauri::generate_handler![greet, save_drawing, mark_unsaved, read_drawing_file, create_window_with_data])
         .setup(|app| {
             // Initialize save state
             app.manage(AppSaveState(Default::default()));

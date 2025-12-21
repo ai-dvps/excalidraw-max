@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { listen } from '@tauri-apps/api/event';
 import type { InitialData } from '../types/open';
 
 /**
@@ -6,40 +7,60 @@ import type { InitialData } from '../types/open';
  *
  * Features:
  * - Retrieves initialData from window.__excalidrawInitialData (set by openService)
+ * - Listens for load-canvas-data event for data passed from parent window
  * - Cleans up the data after use to prevent reloading on refresh
- * - Returns loading state and the loaded data
  */
 export function useFileLoader() {
   const [initialData, setInitialData] = useState<InitialData | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load initial data from window object (set by openService when creating new window)
   useEffect(() => {
-    // Check if there's initial data from file open operation
-    if (typeof window !== 'undefined') {
-      const excalidrawData = (window as any).__excalidrawInitialData;
+    let unlisten: (() => void) | undefined;
 
-      if (excalidrawData) {
-        setIsLoading(true);
+    async function loadData() {
+      if (typeof window !== 'undefined') {
+        // First, check if data was already stored (e.g., from event)
+        const storedData = (window as any).__excalidrawInitialData;
+        if (storedData) {
+          try {
+            setInitialData(storedData);
+            console.log('Initial data loaded from storage:', {
+              elementsCount: storedData.elements?.length || 0,
+              hasAppState: !!storedData.appState,
+            });
+            // Clean up
+            delete (window as any).__excalidrawInitialData;
+            return;
+          } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            setError(errorMessage);
+            console.error('Failed to load stored data:', errorMessage);
+            return;
+          }
+        }
+
+        // Listen for load-canvas-data event (sent from parent window when creating new window)
         try {
-          setInitialData(excalidrawData);
-          console.log('Initial data loaded from file:', {
-            elementsCount: excalidrawData.elements?.length || 0,
-            hasAppState: !!excalidrawData.appState,
+          unlisten = await listen<InitialData>('load-canvas-data', (event) => {
+            console.log('Load canvas data event received:', {
+              elementsCount: event.payload.elements?.length || 0,
+              hasAppState: !!event.payload.appState,
+            });
+            setInitialData(event.payload);
+            // Store in window object as backup
+            (window as any).__excalidrawInitialData = event.payload;
           });
-
-          // Clean up to prevent reloading on hot reload or navigation
-          delete (window as any).__excalidrawInitialData;
         } catch (err) {
-          const errorMessage = err instanceof Error ? err.message : String(err);
-          setError(errorMessage);
-          console.error('Failed to load initial data:', errorMessage);
-        } finally {
-          setIsLoading(false);
+          console.error('Failed to set up event listener:', err);
         }
       }
     }
+
+    loadData();
+
+    return () => {
+      if (unlisten) unlisten();
+    };
   }, []);
 
   // Clear error state
@@ -49,7 +70,6 @@ export function useFileLoader() {
 
   return {
     initialData,
-    isLoading,
     error,
     clearError,
   };
