@@ -21,96 +21,72 @@ let handlerCount = 0;
 export function useWindowCloseHandler(): void {
   // Track if close is currently being processed
   const closeInProgress = useRef(false);
+   // 1. Add a ref to track if we are forcing a close
+  const ignoreCloseRequest = useRef(false);
 
   const handleClose = useCallback(async (event: any) => {
-    console.log('[Close Handler] ================= CLOSE REQUESTED =================');
-    console.log('[Close Handler] Event type:', event?.constructor?.name);
+    // 2. CHECK THIS FIRST: If we decided to close, let it happen!
+    if (ignoreCloseRequest.current) {
+      console.log('[Close Handler] Force close flag active - allowing close');
+      return; // Returns without calling preventDefault(), so the window closes.
+    }
 
-    // Always prevent default first to block native close
+    // 3. NOW prevent default for normal user interactions
     event.preventDefault();
-    console.log('[Close Handler] Prevented default');
 
-    // Prevent duplicate close handling
+    // Prevent duplicate processing (user mashing the X button)
     if (closeInProgress.current) {
-      console.log('[Close Handler] ALREADY IN PROGRESS, returning');
+      console.log('[Close Handler] Logic already running - ignoring duplicate click');
       return;
     }
 
     closeInProgress.current = true;
-    console.log('[Close Handler] Started processing');
 
     try {
-      // Get current window
       const win = getCurrentWindow();
       const windowLabel = (win as any).label || 'main';
-      console.log(`[Close Handler] Window: ${windowLabel}`);
 
-      // Get current state from frontend state (same store as useWindowState)
       const currentState = windowStates.get(windowLabel);
-      console.log(`[Close Handler] Current state:`, currentState);
-
       const hasUnsaved = currentState?.hasUnsavedChanges || false;
-      console.log(`[Close Handler] Has unsaved changes: ${hasUnsaved}`);
 
       if (!hasUnsaved) {
-        // No unsaved changes, allow close
-        console.log('[Close Handler] No unsaved changes, allowing close');
-        closeInProgress.current = false;
+        console.log('[Close Handler] No unsaved changes, closing now');
+        // 4. Set the VIP flag before closing
+        ignoreCloseRequest.current = true;
         await win.close();
         return;
       }
 
-      // Get file path for dialog message
       const filePath = currentState?.filePath || null;
       const fileName = filePath?.split('/').pop() || 'this drawing';
 
-      console.log(`[Close Handler] Showing dialog for: ${fileName}`);
-
-      // Show confirmation dialog with Yes/No/Cancel
-      // Returns: 'Yes', 'No', or 'Cancel' (default labels)
       const choice = await message(
         `Do you want to save changes to ${fileName} before closing?`,
-        {
-          title: 'Unsaved Changes',
-          buttons: 'YesNoCancel',
-        }
+        { title: 'Unsaved Changes', buttons: 'YesNoCancel' }
       );
 
-      console.log(`[Close Handler] User choice:`, choice);
-
-      // Handle by return value
       if (choice === 'Cancel') {
-        // User clicked Cancel
-        console.log('[Close Handler] User clicked Cancel - keeping window open');
         closeInProgress.current = false;
         return;
       } else if (choice === 'Yes') {
-        // User clicked Yes (Save)
-        console.log('[Close Handler] User clicked Save - showing save dialog');
         const { saveService } = await import('../services/saveService');
         const saved = await saveService.triggerSave();
         if (saved) {
-          console.log('[Close Handler] Save successful, closing window');
-          closeInProgress.current = false;
+          // 5. Save success -> Set VIP flag -> Close
+          ignoreCloseRequest.current = true;
           await win.close();
         } else {
-          // Save failed, allow user to try again
-          console.log('[Close Handler] Save failed or cancelled - keeping window open');
           closeInProgress.current = false;
         }
       } else if (choice === 'No') {
-        // User clicked No (Discard)
-        console.log('[Close Handler] User clicked Discard - closing without saving');
-        closeInProgress.current = false;
+        // 6. User discarded -> Set VIP flag -> Close
+        ignoreCloseRequest.current = true;
         await win.close();
       } else {
-        // Unknown choice
-        console.log('[Close Handler] Unknown choice, keeping window open');
         closeInProgress.current = false;
       }
     } catch (error) {
       console.error('[Close Handler] Error:', error);
-      // On error, keep window open
       closeInProgress.current = false;
     }
   }, []);
