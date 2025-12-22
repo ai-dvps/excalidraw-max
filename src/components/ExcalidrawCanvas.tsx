@@ -249,6 +249,20 @@ export function ExcalidrawCanvas({ initialData: propInitialData }: ExcalidrawCan
     return openService.onAfterOpen(updateSavedSignature);
   }, [updateSavedSignature]);
 
+  // Update window title after save (for new files that were just saved)
+  useEffect(() => {
+    return saveService.onAfterSaveWithPath(async (filePath: string) => {
+      const fileName = filePath.split('/').pop()?.replace(/\.(excalidraw|json)$/i, '') || 'Untitled';
+      try {
+        const appWindow = getCurrentWindow();
+        await appWindow.setTitle(fileName);
+        console.log('Window title updated after save:', fileName);
+      } catch (err) {
+        console.error('Failed to update window title after save:', err);
+      }
+    });
+  }, []);
+
   return (
     <ErrorBoundary>
       <div

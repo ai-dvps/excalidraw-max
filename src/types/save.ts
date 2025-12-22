@@ -36,8 +36,8 @@ export interface SaveMenuItem {
 export interface SaveResult {
   /** True if save completed successfully */
   success: boolean;
-  /** Path where file was saved (null if cancelled) */
-  filePath: string | null;
+  /** Path where file was saved (null if cancelled) - snake_case to match Rust struct */
+  file_path: string | null;
   /** Error message if success is false */
   error: string | null;
 }

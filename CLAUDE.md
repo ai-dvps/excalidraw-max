@@ -212,6 +212,37 @@ pub struct DrawingData {
 }
 ```
 
+### Accessing Rust Response Fields
+
+When accessing fields from Rust responses, use **snake_case** (matching the Rust struct):
+
+```rust
+// Rust struct - uses snake_case
+pub struct SaveResult {
+    pub success: bool,
+    pub file_path: Option<String>,  // <-- snake_case
+    pub error: Option<String>,
+}
+```
+
+```typescript
+// TypeScript type - MUST use snake_case to match Rust struct
+export interface SaveResult {
+  success: boolean;
+  file_path: string | null;  // <-- snake_case
+  error: string | null;
+}
+
+// Accessing the response - use snake_case
+if (result.success && result.file_path) {
+  console.log('Saved to:', result.file_path);
+}
+```
+
+**Summary:**
+- **TS → Rust (invoke)**: camelCase parameters → Rust converts to snake_case
+- **Rust → TS (response)**: Use snake_case (matches Rust struct field names)
+
 ## Menu & Shortcuts
 
 ### Menu Structure
@@ -607,6 +638,28 @@ if (typeof fileName === 'string' && fileName) {
   await appWindow.setTitle(fileName);
 }
 ```
+
+### Updating Window Title After Save
+
+When a new window (without an associated file) is saved, the window title should update to the file name. Use `saveService.onAfterSaveWithPath()`:
+
+```typescript
+// ExcalidrawCanvas.tsx
+useEffect(() => {
+  return saveService.onAfterSaveWithPath(async (filePath: string) => {
+    const fileName = filePath.split('/').pop()?.replace(/\.(excalidraw|json)$/i, '') || 'Untitled';
+    try {
+      const appWindow = getCurrentWindow();
+      await appWindow.setTitle(fileName);
+      console.log('Window title updated after save:', fileName);
+    } catch (err) {
+      console.error('Failed to update window title after save:', err);
+    }
+  });
+}, []);
+```
+
+The `saveService` calls these callbacks after a successful save with the file path, allowing the window title to be updated.
 
 ## Multi-Window Configuration
 

@@ -26,6 +26,10 @@ let listeners: (() => void)[] = [];
 // After-save callbacks (for change detection)
 let afterSaveCallbacks: (() => void)[] = [];
 
+// After-save callbacks with file path (for window title updates)
+type AfterSaveCallback = (filePath: string) => void;
+let afterSaveWithPathCallbacks: AfterSaveCallback[] = [];
+
 /**
  * Get current window label for state management.
  */
@@ -148,18 +152,27 @@ export const saveService = {
         filePath: filePath,
       });
 
-      if (result.success && result.filePath) {
-        currentSaveState.currentFilePath = result.filePath;
+      console.log('Save result:', result)
+
+      if (result.success && result.file_path) {
+        currentSaveState.currentFilePath = result.file_path;
         currentSaveState.lastSavedAt = new Date().toISOString();
         currentSaveState.hasUnsavedChanges = false;
-        console.log('Drawing saved to:', result.filePath);
+        console.log('Drawing saved to:', result.file_path);
 
         // Update window state to "saved"
         const windowLabel = await getCurrentWindowLabel();
-        stateService.setSaved(windowLabel, result.filePath);
+        if (result.file_path) {
+          stateService.setSaved(windowLabel, result.file_path);
+        }
 
         // Notify after-save callbacks (for change detection)
         afterSaveCallbacks.forEach((callback) => callback());
+        // Notify after-save callbacks with file path (for window title)
+        if (result.file_path) {
+          const filePath = result.file_path;
+          afterSaveWithPathCallbacks.forEach((callback) => callback(filePath));
+        }
 
         return true;
       } else {
@@ -208,18 +221,25 @@ export const saveService = {
         filePath: filePath,
       });
 
-      if (result.success && result.filePath) {
-        currentSaveState.currentFilePath = result.filePath;
+      if (result.success && result.file_path) {
+        currentSaveState.currentFilePath = result.file_path;
         currentSaveState.lastSavedAt = new Date().toISOString();
         currentSaveState.hasUnsavedChanges = false;
-        console.log('Drawing saved to:', result.filePath);
+        console.log('Drawing saved to:', result.file_path);
 
         // Update window state to "saved"
         const windowLabel = await getCurrentWindowLabel();
-        stateService.setSaved(windowLabel, result.filePath);
+        if (result.file_path) {
+          stateService.setSaved(windowLabel, result.file_path);
+        }
 
         // Notify after-save callbacks (for change detection)
         afterSaveCallbacks.forEach((callback) => callback());
+        // Notify after-save callbacks with file path (for window title)
+        if (result.file_path) {
+          const filePath = result.file_path;
+          afterSaveWithPathCallbacks.forEach((callback) => callback(filePath));
+        }
 
         return true;
       } else {
@@ -330,11 +350,27 @@ export const saveService = {
   },
 
   /**
+   * Register a callback to be called after successful save with file path.
+   * Used to update window title with the saved file name.
+   */
+  onAfterSaveWithPath(callback: (filePath: string) => void): () => void {
+    afterSaveWithPathCallbacks.push(callback);
+    // Return unsubscribe function
+    return () => {
+      const index = afterSaveWithPathCallbacks.indexOf(callback);
+      if (index > -1) {
+        afterSaveWithPathCallbacks.splice(index, 1);
+      }
+    };
+  },
+
+  /**
    * Clean up resources.
    */
   dispose(): void {
     listeners.forEach((unlisten) => unlisten());
     listeners = [];
     afterSaveCallbacks = [];
+    afterSaveWithPathCallbacks = [];
   },
 };
