@@ -18,7 +18,7 @@
       "identifier": "core:event:allow-listen",
       "allow": [
         {
-          "windows": ["excalidraw-*"]
+          "windows": ["main", "excalidraw-*"]
         }
       ]
     },

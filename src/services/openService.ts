@@ -25,14 +25,12 @@ let currentOpenState = {
 let listeners: (() => void)[] = [];
 
 /**
- * Get current window label for state management.
+ * Result of window creation from Rust backend.
  */
-async function getCurrentWindowLabel(): Promise<string> {
-  const { getCurrentWindow } = await import('@tauri-apps/api/window');
-  const currentWindow = getCurrentWindow();
-  // In Tauri v2, we can get the label from the window object
-  // Using type assertion since the API may vary
-  return (currentWindow as any).label || 'main';
+interface WindowResult {
+  success: boolean;
+  window_label?: string;
+  error?: string;
 }
 
 /**
@@ -199,7 +197,7 @@ export const openService = {
       console.log('AppState:', initialData.appState);
       console.log('Files:', initialData.files ? 'present' : 'empty');
 
-      const result = await invoke<{ success: boolean; error?: string }>('create_window_with_data', {
+      const result = await invoke<WindowResult>('create_window_with_data', {
         elements: initialData.elements || [],
         appState: initialData.appState || {},
         files: initialData.files || {},
@@ -209,9 +207,10 @@ export const openService = {
         console.log('Window created successfully via Rust backend');
 
         // Update window state to "saved" with the file path
-        if (filePath) {
-          const windowLabel = await getCurrentWindowLabel();
-          stateService.setSaved(windowLabel, filePath);
+        // Use the returned window_label from the newly created window
+        if (filePath && result.window_label) {
+          console.log(`Setting saved state for new window: ${result.window_label}`);
+          stateService.setSaved(result.window_label, filePath);
         }
 
         return true;

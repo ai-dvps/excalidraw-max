@@ -121,6 +121,7 @@ pub async fn read_drawing_file(_app: AppHandle, path: String) -> Result<LoadResu
 #[derive(Debug, Serialize, Deserialize)]
 pub struct WindowResult {
     pub success: bool,
+    pub window_label: Option<String>,
     pub error: Option<String>,
 }
 
@@ -189,11 +190,11 @@ pub fn create_window_with_data(
                 println!("Initial data injected into window: {}", window_label);
             }
 
-            Ok(WindowResult { success: true, error: None })
+            Ok(WindowResult { success: true, window_label: Some(window_label), error: None })
         }
         Err(e) => {
             println!("Failed to create window: {}", e);
-            Ok(WindowResult { success: false, error: Some(e.to_string()) })
+            Ok(WindowResult { success: false, window_label: None, error: Some(e.to_string()) })
         }
     }
 }

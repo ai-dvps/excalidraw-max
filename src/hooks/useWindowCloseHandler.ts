@@ -101,9 +101,11 @@ export function useWindowCloseHandler(): void {
 
         const win = getCurrentWindow();
         const windowLabel = (win as any).label || 'main';
+        console.log(`[Close Handler] Window label: ${windowLabel}`);
 
         // Initialize state for this window if not exists (sync with useWindowState)
         if (!windowStates.has(windowLabel)) {
+          console.log(`[Close Handler] Initializing state for ${windowLabel}`);
           windowStates.set(windowLabel, {
             state: 'created',
             filePath: null,

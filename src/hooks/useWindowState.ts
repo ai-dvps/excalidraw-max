@@ -105,7 +105,9 @@ interface UseWindowStateReturn {
  * const { state, setSaved, setEdited, resetCreated } = useWindowState({ windowLabel: 'main' });
  */
 export function useWindowState(options: UseWindowStateOptions = {}): UseWindowStateReturn {
-  const { windowLabel = 'main', defaultTitle = 'Untitled', onStateChange } = options;
+  // Get window label dynamically from current window, fallback to 'main'
+  const windowLabel = options.windowLabel || ((getCurrentWindow() as any).label || 'main');
+  const { defaultTitle = 'Untitled', onStateChange } = options;
 
   const [state, setState] = useState<WindowState>(() => {
     const existing = windowStates.get(windowLabel);
