@@ -174,6 +174,44 @@ const result = await invoke('create_window_with_data', {
 
 If you get the error "missing required key appState", check that the frontend is using camelCase while Rust uses snake_case.
 
+### Optional Parameters
+
+Use `Option<T>` in Rust for optional parameters:
+
+```rust
+// Rust - name is optional (None if not provided)
+pub fn create_window_with_data(
+    _app: AppHandle,
+    elements: Vec<serde_json::Value>,
+    app_state: serde_json::Value,
+    files: serde_json::Value,
+    name: Option<String>,  // Optional parameter
+) -> Result<WindowResult, String> { ... }
+```
+
+```typescript
+// Frontend - can omit optional parameters
+const result = await invoke('create_window_with_data', {
+  elements: initialData.elements || [],
+  appState: initialData.appState || {},
+  files: initialData.files || {},
+  name: initialData.name,  // Optional - only passed if present
+});
+```
+
+The `DrawingData` struct must also include the optional field:
+
+```rust
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DrawingData {
+    pub elements: Vec<serde_json::Value>,
+    #[serde(rename = "appState")]
+    pub app_state: serde_json::Value,
+    pub files: serde_json::Value,
+    pub name: Option<String>,  // Match the parameter
+}
+```
+
 ## Menu & Shortcuts
 
 ### Menu Structure
@@ -503,6 +541,71 @@ useEffect(() => {
 
   return () => clearInterval(checkInterval);
 }, [drawingData]);
+```
+
+### Window Title Updates
+
+When opening a file, the window title should update to show the file name. This requires passing the file name through the entire data flow:
+
+**Execution Path for Window Title:**
+
+| Step | File | What happens |
+|------|------|--------------|
+| 1 | `src/services/openService.ts` | Extract `name` from filePath |
+| 2 | `src/services/openService.ts` | Pass `name` to Rust via `invoke` |
+| 3 | `src-tauri/src/commands/open_commands.rs` | Receive `name` in `create_window_with_data` |
+| 4 | Rust | Include `name` in `DrawingData` struct |
+| 5 | Rust injection | `name` injected into `window.__excalidrawInitialData` |
+| 6 | `src/hooks/useFileLoader.ts` | Read `window.__excalidrawInitialData` |
+| 7 | `src/components/ExcalidrawCanvas.tsx` | Use `initialData.name` to set title |
+
+**Code flow:**
+
+```typescript
+// 1. openService.ts - Extract name and pass to Rust
+const fileName = filePath.split('/').pop()?.replace(/\.(excalidraw|json)$/i, '') || 'Untitled';
+const initialData: InitialData = {
+  elements: result.data.elements,
+  appState: result.data.appState,
+  files: result.data.files,
+  name: fileName,  // <-- Include name
+};
+
+const result = await invoke('create_window_with_data', {
+  elements: initialData.elements || [],
+  appState: initialData.appState || {},
+  files: initialData.files || {},
+  name: initialData.name,  // <-- Pass to Rust
+});
+```
+
+```rust
+// 2. Rust backend - Receive and include name
+#[tauri::command]
+pub fn create_window_with_data(
+    _app: AppHandle,
+    elements: Vec<serde_json::Value>,
+    app_state: serde_json::Value,
+    files: serde_json::Value,
+    name: Option<String>,  // <-- Receive name
+) -> Result<WindowResult, String> {
+    let drawing_data = DrawingData {
+        elements,
+        app_state,
+        files,
+        name,  // <-- Include in DrawingData
+    };
+    // ... inject into window.__excalidrawInitialData
+}
+```
+
+```typescript
+// 3. ExcalidrawCanvas.tsx - Set window title
+const fileName = initialData.name;
+if (typeof fileName === 'string' && fileName) {
+  const appWindow = getCurrentWindow();
+  await appWindow.setTitle(fileName);
+}
 ```
 
 ## Multi-Window Configuration

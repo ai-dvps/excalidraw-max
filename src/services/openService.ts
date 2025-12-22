@@ -118,11 +118,15 @@ export const openService = {
       }
 
       if (result.data) {
+        // Extract file name from path
+        const fileName = filePath.split('/').pop()?.replace(/\.(excalidraw|json)$/i, '') || 'Untitled';
+
         // Success - create new window with loaded data
         const initialData: InitialData = {
           elements: result.data.elements as any[],
           appState: result.data.appState as any,
           files: result.data.files as Record<string, unknown>,
+          name: fileName,
         };
 
         const success = await this.createNewWindow(initialData, filePath);
@@ -204,6 +208,7 @@ export const openService = {
         elements: initialData.elements || [],
         appState: initialData.appState || {},
         files: initialData.files || {},
+        name: initialData.name,
       });
 
       if (result.success) {

@@ -1,4 +1,5 @@
 import React, { useCallback, useRef, useEffect, useState } from 'react';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Excalidraw } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -112,7 +113,7 @@ export function ExcalidrawCanvas({ initialData: propInitialData }: ExcalidrawCan
       elementsCount: initialData?.elements?.length || 0,
     });
 
-    const loadDrawing = () => {
+    const loadDrawing = async () => {
       if (initialData && excalidrawAPI.current && !dataLoaded) {
         console.log('Loading drawing via updateScene:', {
           elementsCount: initialData.elements?.length || 0,
@@ -126,6 +127,18 @@ export function ExcalidrawCanvas({ initialData: propInitialData }: ExcalidrawCan
           files: initialData.files || {},
           captureUpdate: 'IMMEDIATELY' as any,
         });
+
+        // Update window title with file name from initialData
+        const fileName = initialData.name;
+        if (typeof fileName === 'string' && fileName) {
+          try {
+            const appWindow = getCurrentWindow();
+            await appWindow.setTitle(fileName);
+            console.log('Window title set to:', fileName);
+          } catch (err) {
+            console.error('Failed to set window title:', err);
+          }
+        }
 
         setDataLoaded(true);
         console.log('Drawing loaded successfully');

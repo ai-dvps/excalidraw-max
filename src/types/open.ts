@@ -54,6 +54,7 @@ export interface InitialData {
   elements?: ExcalidrawElement[];
   appState?: Partial<AppState>;
   files?: Record<string, unknown>;
+  name?: string;
 }
 
 /**
