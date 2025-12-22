@@ -302,6 +302,151 @@ Required permissions (added automatically by `tauri add dialog`):
 
 ## Excalidraw Integration
 
+### Performance: Change Detection for Large Diagrams
+
+Excalidraw's `onChange` callback fires **extremely frequently**:
+- On every pixel during mouse drag (resize/move operations)
+- Up to 60 times per second during interactions
+- On selection changes, scroll, zoom, etc.
+
+**The Problem:** Using `JSON.stringify(elements)` to detect changes causes:
+- 10,000 elements ≈ 2-5 MB string allocation
+- 60 calls/sec = hundreds of MB/second of garbage
+- GC stutter and frame drops
+
+**The Solution: Version Checksum** (`src/components/ExcalidrawCanvas.tsx`)
+
+Excalidraw elements have a built-in `version` property (integer) that increments on each change. Sum of versions = document checksum with zero memory allocation:
+
+```typescript
+// Calculate checksum from element versions (O(N) integer math, 0 allocations)
+function calculateElementsChecksum(elements: readonly any[]): number {
+  let sum = 0;
+  for (let i = 0; i < elements.length; i++) {
+    // Include deleted elements - deleting is a change
+    sum += elements[i].version;
+  }
+  return sum;
+}
+
+// Whitelist for appState (small object, JSON.stringify is fine)
+function getAppStateHash(appState: any): string {
+  return JSON.stringify({
+    viewBackgroundColor: appState.viewBackgroundColor,
+    gridSize: appState.gridSize,
+    name: appState.name,
+    theme: appState.theme,
+    // Only visual/export properties that persist in file
+    // EXCLUDE: selectedElementIds, scrollX, scrollY, zoom, viewModeEnabled
+  });
+}
+```
+
+**Performance Comparison:**
+
+| Strategy | Memory (10k items) | CPU Cost | Risk |
+|----------|-------------------|----------|------|
+| JSON.stringify | ~5MB per check | O(N) string parse | High (GC stutter) |
+| Version Sum | **0 bytes** | O(N) integer add | **None** |
+
+**Complete Change Detection Implementation:**
+
+```typescript
+// Ref to store the "saved" signature (updated only on save/open)
+const savedSignatureRef = useRef<{
+  elementsChecksum: number;
+  appStateHash: string;
+  filesCount: number;
+} | null>(null);
+
+// Simple debounce utility (no lodash dependency)
+function debounce<T extends (...args: any[]) => void>(
+  fn: T,
+  delay: number
+): T {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  return ((...args: any[]) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn(...args), delay);
+  }) as T;
+}
+
+// Debounced change checker
+const checkForChanges = useCallback(
+  debounce((elements: readonly any[], appState: any, files: Record<string, unknown>) => {
+    if (!elements || !appState) return;
+
+    // Initialize on first run
+    if (savedSignatureRef.current === null) {
+      savedSignatureRef.current = {
+        elementsChecksum: calculateElementsChecksum(elements),
+        appStateHash: getAppStateHash(appState),
+        filesCount: Object.keys(files || {}).length,
+      };
+      return;
+    }
+
+    // Compare against saved signature
+    const hasChanged =
+      calculateElementsChecksum(elements) !== savedSignatureRef.current.elementsChecksum ||
+      getAppStateHash(appState) !== savedSignatureRef.current.appStateHash ||
+      Object.keys(files || {}).length !== savedSignatureRef.current.filesCount;
+
+    if (hasChanged) {
+      markUnsaved();
+      setEdited();
+    }
+  }, 500), // 500ms debounce batches rapid changes
+  [markUnsaved, setEdited]
+);
+
+const handleChange = useCallback(
+  (elements: readonly any[], appState: any, files: Record<string, unknown>) => {
+    checkForChanges(elements, appState, files);
+  },
+  [checkForChanges]
+);
+```
+
+**Integration with Save/Open:**
+
+```typescript
+// Update saved signature after save or open
+function updateSavedSignature() {
+  if (excalidrawAPI.current) {
+    const elements = excalidrawAPI.current.getSceneElements();
+    const appState = excalidrawAPI.current.getAppState();
+    const files = excalidrawAPI.current.getFiles();
+
+    savedSignatureRef.current = {
+      elementsChecksum: calculateElementsChecksum(elements),
+      appStateHash: getAppStateHash(appState),
+      filesCount: Object.keys(files).length,
+    };
+  }
+}
+
+// Register callbacks in services
+useEffect(() => {
+  return saveService.onAfterSave(updateSavedSignature);
+}, [updateSavedSignature]);
+
+useEffect(() => {
+  return openService.onAfterOpen(updateSavedSignature);
+}, [updateSavedSignature]);
+```
+
+**Key Design Decisions:**
+
+1. **Debounce (500ms)** - Defers expensive operations until user stops interacting
+2. **appState whitelist** - Ignores selection, scroll, zoom (transient UI state)
+3. **Files count only** - Files can be large binary data, count change is sufficient
+4. **Saved state ref** - Tracks "clean" state from last save/open
+
+**Edge Case: Undo Behavior**
+
+Excalidraw's version increments even on undo. If user moves item (v1→v2), then Undo (v2→v3), checksum changes even though position looks same. The app treats this as "edited" - acceptable behavior for most applications.
+
 ### Loading Drawings Dynamically
 
 The `initialData` prop only works when Excalidraw is first mounted. For dynamic loading (e.g., opening files in new windows), use the `updateScene` API:
