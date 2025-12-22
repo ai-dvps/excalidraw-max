@@ -74,6 +74,56 @@ Permissions are configured in `src-tauri/capabilities/default.json`:
 - `core:default` - Core Tauri permissions
 - `opener:default` - Open URLs/files permission
 
+## Handling Window Close Events (VIP Flag Pattern)
+
+When using `onCloseRequested` to show a confirmation dialog, calling `win.close()` from within the handler triggers another close event, causing an infinite loop of dialogs.
+
+**Solution: Use a "VIP flag" pattern** (`src/hooks/useWindowCloseHandler.ts`):
+
+```typescript
+export function useWindowCloseHandler(): void {
+  // Flag that allows close to proceed without showing dialog
+  const ignoreCloseRequest = useRef(false);
+  // Flag to prevent duplicate processing
+  const closeInProgress = useRef(false);
+
+  const handleClose = useCallback(async (event: any) => {
+    // 1. CHECK FIRST: If we decided to close, let it happen!
+    if (ignoreCloseRequest.current) {
+      console.log('[Close Handler] Force close - allowing');
+      return; // Returns WITHOUT preventDefault(), window closes
+    }
+
+    // 2. NOW prevent default for normal user interactions
+    event.preventDefault();
+
+    // 3. Prevent duplicate processing
+    if (closeInProgress.current) return;
+    closeInProgress.current = true;
+
+    // ... show dialog ...
+
+    if (choice === 'No' || (choice === 'Yes' && saved)) {
+      // 4. Set VIP flag BEFORE closing
+      ignoreCloseRequest.current = true;
+      await win.close();
+    }
+  }, []);
+
+  // ... setup handler ...
+}
+```
+
+**How it works:**
+1. Check `ignoreCloseRequest.current` FIRST in the handler
+2. If true, return immediately WITHOUT calling `preventDefault()` - the window closes
+3. Before calling `win.close()`, set `ignoreCloseRequest.current = true`
+4. When `win.close()` triggers another `onCloseRequested` event, the flag is checked first and the handler exits without showing the dialog again
+
+This is cleaner than:
+- Removing the handler before close (fragile, race conditions)
+- Using Rust events to close (adds complexity)
+
 ## Adding New Tauri Commands
 
 To add a new Tauri command in Rust:
