@@ -23,6 +23,9 @@ let currentSaveState: SaveState = {
 // Event listeners cleanup functions
 let listeners: (() => void)[] = [];
 
+// After-save callbacks (for change detection)
+let afterSaveCallbacks: (() => void)[] = [];
+
 /**
  * Get current window label for state management.
  */
@@ -155,6 +158,9 @@ export const saveService = {
         const windowLabel = await getCurrentWindowLabel();
         stateService.setSaved(windowLabel, result.filePath);
 
+        // Notify after-save callbacks (for change detection)
+        afterSaveCallbacks.forEach((callback) => callback());
+
         return true;
       } else {
         if (result.error) {
@@ -211,6 +217,9 @@ export const saveService = {
         // Update window state to "saved"
         const windowLabel = await getCurrentWindowLabel();
         stateService.setSaved(windowLabel, result.filePath);
+
+        // Notify after-save callbacks (for change detection)
+        afterSaveCallbacks.forEach((callback) => callback());
 
         return true;
       } else {
@@ -306,10 +315,26 @@ export const saveService = {
   },
 
   /**
+   * Register a callback to be called after successful save.
+   * Used by change detection to update the saved signature.
+   */
+  onAfterSave(callback: () => void): () => void {
+    afterSaveCallbacks.push(callback);
+    // Return unsubscribe function
+    return () => {
+      const index = afterSaveCallbacks.indexOf(callback);
+      if (index > -1) {
+        afterSaveCallbacks.splice(index, 1);
+      }
+    };
+  },
+
+  /**
    * Clean up resources.
    */
   dispose(): void {
     listeners.forEach((unlisten) => unlisten());
     listeners = [];
+    afterSaveCallbacks = [];
   },
 };

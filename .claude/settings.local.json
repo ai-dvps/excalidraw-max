@@ -24,7 +24,8 @@
       "Bash(pnpm tauri:*)",
       "WebFetch(domain:tauritutorials.com)",
       "Bash(git checkout:*)",
-      "SlashCommand(/speckit.tasks)"
+      "SlashCommand(/speckit.tasks)",
+      "WebSearch"
     ]
   }
 }

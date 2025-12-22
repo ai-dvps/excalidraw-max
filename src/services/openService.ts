@@ -24,6 +24,9 @@ let currentOpenState = {
 // Event listeners cleanup functions
 let listeners: (() => void)[] = [];
 
+// After-open callbacks (for change detection)
+let afterOpenCallbacks: (() => void)[] = [];
+
 /**
  * Result of window creation from Rust backend.
  */
@@ -213,6 +216,9 @@ export const openService = {
           stateService.setSaved(result.window_label, filePath);
         }
 
+        // Notify after-open callbacks (for change detection)
+        afterOpenCallbacks.forEach((callback) => callback());
+
         return true;
       } else {
         console.error('Failed to create window:',result, result.error);
@@ -249,10 +255,26 @@ export const openService = {
   },
 
   /**
+   * Register a callback to be called after successful open.
+   * Used by change detection to update the saved signature.
+   */
+  onAfterOpen(callback: () => void): () => void {
+    afterOpenCallbacks.push(callback);
+    // Return unsubscribe function
+    return () => {
+      const index = afterOpenCallbacks.indexOf(callback);
+      if (index > -1) {
+        afterOpenCallbacks.splice(index, 1);
+      }
+    };
+  },
+
+  /**
    * Clean up resources.
    */
   dispose(): void {
     listeners.forEach((unlisten) => unlisten());
     listeners = [];
+    afterOpenCallbacks = [];
   },
 };
