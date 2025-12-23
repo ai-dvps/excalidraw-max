@@ -29,7 +29,8 @@ pub struct DrawingData {
     #[serde(rename = "appState")]
     pub app_state: serde_json::Value,
     pub files: serde_json::Value,
-    pub name: Option<String>,
+    #[serde(rename = "filePath")]
+    pub file_path: Option<String>,
 }
 
 /// Read an Excalidraw file from the local filesystem.
@@ -134,21 +135,21 @@ pub fn create_window_with_data(
     elements: Vec<serde_json::Value>,
     app_state: serde_json::Value,
     files: serde_json::Value,
-    name: Option<String>,
+    file_path: Option<String>,
 ) -> Result<WindowResult, String> {
     // Generate unique window label
     let window_count = _app.webview_windows().len();
     let window_label = format!("excalidraw-{}", window_count);
 
     println!("Creating new window with label: {}", window_label);
-    println!("File name: {:?}", name);
+    println!("File path: {:?}", file_path);
 
     // Create drawing data
     let drawing_data = DrawingData {
         elements,
         app_state,
         files,
-        name,
+        file_path,
     };
 
     // Create new window

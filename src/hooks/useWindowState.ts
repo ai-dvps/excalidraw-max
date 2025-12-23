@@ -52,6 +52,7 @@ function updateState(label: string, updates: Partial<WindowState>): WindowState 
  * Generate window title based on state
  */
 export function generateWindowTitle(state: WindowState, defaultTitle: string = 'Untitled'): string {
+  console.log("generating title for window", state.state, state.filePath, defaultTitle)
   if (state.state === 'created' && !state.filePath) {
     return defaultTitle;
   }
@@ -170,6 +171,7 @@ export function useWindowState(options: UseWindowStateOptions = {}): UseWindowSt
    */
   const setSaved = useCallback(
     (filePath?: string) => {
+      console.log("set saved state is called", filePath)
       if (!filePath) {
         return;
       }

@@ -99,7 +99,7 @@ export function ExcalidrawCanvas({ initialData: propInitialData }: ExcalidrawCan
   const { initialData: fileInitialData, error: fileError } = useFileLoader();
 
   // Use prop data if provided, otherwise use file loader data
-  const initialData = propInitialData ?? fileInitialData ?? null;
+  const initialData = fileInitialData ?? propInitialData ?? null;
 
   // Track if data has been loaded to prevent duplicate loads
   const [dataLoaded, setDataLoaded] = useState(false);
@@ -111,6 +111,7 @@ export function ExcalidrawCanvas({ initialData: propInitialData }: ExcalidrawCan
       hasApi: !!excalidrawAPI.current,
       dataLoaded,
       elementsCount: initialData?.elements?.length || 0,
+      filePath: initialData?.filePath || '(none)',
     });
 
     const loadDrawing = async () => {

@@ -123,7 +123,7 @@ export const openService = {
           elements: result.data.elements as any[],
           appState: result.data.appState as any,
           files: result.data.files as Record<string, unknown>,
-          filePath,
+          filePath: filePath,
         };
 
         const success = await this.createNewWindow(initialData);
@@ -202,13 +202,12 @@ export const openService = {
       console.log('Files:', initialData.files ? 'present' : 'empty');
       // Extract file name from path
       const filePath = initialData.filePath;
-      const fileName = filePath?.split('/').pop()?.replace(/\.(excalidraw|json)$/i, '') || 'Untitled';
 
       const result = await invoke<WindowResult>('create_window_with_data', {
         elements: initialData.elements || [],
         appState: initialData.appState || {},
         files: initialData.files || {},
-        name: fileName,
+        filePath,
       });
 
       if (result.success) {

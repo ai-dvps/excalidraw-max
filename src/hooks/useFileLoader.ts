@@ -29,6 +29,7 @@ export function useFileLoader() {
             console.log('Initial data loaded from storage:', {
               elementsCount: storedData.elements?.length || 0,
               hasAppState: !!storedData.appState,
+              filePath: storedData.filePath,
             });
             // Clean up
             delete (window as any).__excalidrawInitialData;
@@ -56,6 +57,7 @@ export function useFileLoader() {
           console.log('Load canvas data event received:', {
             elementsCount: event.payload.elements?.length || 0,
             hasAppState: !!event.payload.appState,
+            filePath: event.payload.filePath,
           });
           setInitialData(event.payload);
           // Store in window object as backup
