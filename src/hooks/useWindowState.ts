@@ -52,12 +52,12 @@ function updateState(label: string, updates: Partial<WindowState>): WindowState 
  * Generate window title based on state
  */
 export function generateWindowTitle(state: WindowState, defaultTitle: string = 'Untitled'): string {
-  if (state.state === 'created' || !state.filePath) {
+  if (state.state === 'created' && !state.filePath) {
     return defaultTitle;
   }
 
   // Extract filename from path
-  const filename = state.filePath.split('/').pop() || defaultTitle;
+  const filename = state.filePath?.split('/').pop() || defaultTitle;
 
   if (state.state === 'edited') {
     return `[edited] ${filename}`;
@@ -89,7 +89,7 @@ interface UseWindowStateReturn {
   /** Get current state synchronously */
   getState: () => WindowState;
   /** Transition to saved state */
-  setSaved: (filePath: string) => void;
+  setSaved: (filePath?: string) => void;
   /** Transition to edited state */
   setEdited: () => void;
   /** Reset to created state */
@@ -132,6 +132,9 @@ export function useWindowState(options: UseWindowStateOptions = {}): UseWindowSt
     const handleStateChange = (newState: WindowState) => {
       setState(newState);
       onStateChange?.(newState);
+      let title = generateWindowTitle(newState, defaultTitle);
+      console.log("handle state change, new title", title)
+      setWindowTitle(title);
     };
 
     listeners.add(handleStateChange);
@@ -166,7 +169,10 @@ export function useWindowState(options: UseWindowStateOptions = {}): UseWindowSt
    * Transition to saved state (after save or open)
    */
   const setSaved = useCallback(
-    (filePath: string) => {
+    (filePath?: string) => {
+      if (!filePath) {
+        return;
+      }
       const newState = updateState(windowLabel, {
         state: 'saved',
         filePath,

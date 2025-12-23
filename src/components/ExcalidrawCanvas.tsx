@@ -82,7 +82,7 @@ export function ExcalidrawCanvas({ initialData: propInitialData }: ExcalidrawCan
   const { markUnsaved } = useSaveState();
 
   // Window state hook for state machine
-  const { setEdited } = useWindowState();
+  const { setEdited, setSaved } = useWindowState();
 
   // Window close handler for unsaved changes confirmation
   useWindowCloseHandler();
@@ -128,17 +128,7 @@ export function ExcalidrawCanvas({ initialData: propInitialData }: ExcalidrawCan
           captureUpdate: 'IMMEDIATELY' as any,
         });
 
-        // Update window title with file name from initialData
-        const fileName = initialData.name;
-        if (typeof fileName === 'string' && fileName) {
-          try {
-            const appWindow = getCurrentWindow();
-            await appWindow.setTitle(fileName);
-            console.log('Window title set to:', fileName);
-          } catch (err) {
-            console.error('Failed to set window title:', err);
-          }
-        }
+        setSaved(initialData.filePath);
 
         setDataLoaded(true);
         console.log('Drawing loaded successfully');

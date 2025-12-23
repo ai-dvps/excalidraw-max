@@ -118,18 +118,15 @@ export const openService = {
       }
 
       if (result.data) {
-        // Extract file name from path
-        const fileName = filePath.split('/').pop()?.replace(/\.(excalidraw|json)$/i, '') || 'Untitled';
-
         // Success - create new window with loaded data
         const initialData: InitialData = {
           elements: result.data.elements as any[],
           appState: result.data.appState as any,
           files: result.data.files as Record<string, unknown>,
-          name: fileName,
+          filePath,
         };
 
-        const success = await this.createNewWindow(initialData, filePath);
+        const success = await this.createNewWindow(initialData);
 
         if (success) {
           currentOpenState.currentFilePath = filePath;
@@ -197,18 +194,21 @@ export const openService = {
   /**
    * Create a new Tauri window with the loaded drawing data.
    */
-  async createNewWindow(initialData: InitialData, filePath?: string): Promise<boolean> {
+  async createNewWindow(initialData: InitialData): Promise<boolean> {
     try {
       console.log('Creating new window with data...');
       console.log('Elements count:', initialData.elements?.length || 0);
       console.log('AppState:', initialData.appState);
       console.log('Files:', initialData.files ? 'present' : 'empty');
+      // Extract file name from path
+      const filePath = initialData.filePath;
+      const fileName = filePath?.split('/').pop()?.replace(/\.(excalidraw|json)$/i, '') || 'Untitled';
 
       const result = await invoke<WindowResult>('create_window_with_data', {
         elements: initialData.elements || [],
         appState: initialData.appState || {},
         files: initialData.files || {},
-        name: initialData.name,
+        name: fileName,
       });
 
       if (result.success) {

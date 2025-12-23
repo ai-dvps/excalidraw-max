@@ -90,6 +90,7 @@ export const stateService = {
 
     // Notify listeners
     const listeners = stateListeners.get(windowLabel);
+    console.log("set saved, state listeners size", listeners?.size)
     if (listeners) {
       listeners.forEach((callback) => callback(newState));
     }
