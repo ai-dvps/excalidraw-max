@@ -46,9 +46,19 @@ export const openService = {
    */
   init(): () => void {
     // Listen for menu-triggered opens
-    const unlistenMenuOpen = listen('menu-open-triggered', () => {
+    const unlistenMenuOpen = listen('menu-open-triggered', async () => {
       console.log('Menu open triggered');
-      this.triggerOpen();
+      // Check if this window is focused before opening
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const currentWindow = getCurrentWindow();
+      const isFocused = await currentWindow.isFocused();
+
+      if (isFocused) {
+        console.log('Window is focused, proceeding with open', currentWindow.label);
+        this.triggerOpen();
+      } else {
+        console.log('Window is not focused, ignoring shortcut', currentWindow.label);
+      }
     });
 
     // Listen for shortcut-triggered opens (from global-shortcut plugin)
@@ -62,10 +72,10 @@ export const openService = {
       const isFocused = await currentWindow.isFocused();
 
       if (isFocused) {
-        console.log('Window is focused, proceeding with open');
+        console.log('Window is focused, proceeding with open', currentWindow.label);
         this.triggerOpen();
       } else {
-        console.log('Window is not focused, ignoring shortcut');
+        console.log('Window is not focused, ignoring shortcut', currentWindow.label);
       }
     });
 

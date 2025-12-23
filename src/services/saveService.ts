@@ -77,9 +77,20 @@ export const saveService = {
     );
 
     // Listen for menu-triggered saves
-    const unlistenMenuSave = listen('menu-save-triggered', () => {
+    const unlistenMenuSave = listen('menu-save-triggered', async () => {
       console.log('Menu save triggered')
-      this.triggerSave();
+
+      // Check if this window is focused before saving
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const currentWindow = getCurrentWindow();
+      const isFocused = await currentWindow.isFocused();
+
+      if (isFocused) {
+        console.log('Window is focused, proceeding with save', currentWindow.label);
+        this.triggerSave();
+      } else {
+        console.log('Window is not focused, ignoring shortcut', currentWindow.label);
+      }
     });
 
     // Listen for shortcut-triggered saves (from global-shortcut plugin)
@@ -93,10 +104,10 @@ export const saveService = {
       const isFocused = await currentWindow.isFocused();
 
       if (isFocused) {
-        console.log('Window is focused, proceeding with save');
+        console.log('Window is focused, proceeding with save', currentWindow.label);
         this.triggerSave();
       } else {
-        console.log('Window is not focused, ignoring shortcut');
+        console.log('Window is not focused, ignoring shortcut', currentWindow.label);
       }
     });
 
