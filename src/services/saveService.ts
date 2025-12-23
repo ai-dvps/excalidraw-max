@@ -13,10 +13,7 @@ import type { SaveState, SaveResult } from '../types/save';
 import { stateService } from './stateService';
 
 // Module-level state
-let currentSaveState: SaveState = {
-  hasUnsavedChanges: false,
-  currentFilePath: null,
-  lastSavedAt: null,
+let saveState: SaveState = {
   isSaving: false,
 };
 
@@ -63,19 +60,6 @@ export const saveService = {
    * Call this once when the app starts.
    */
   init(): () => void {
-    // Listen for save state changes from Rust backend
-    const unlistenStateChanged = listen<{ hasUnsavedChanges: boolean; currentFilePath: string | null }>(
-      'save-state-changed',
-      (event) => {
-        currentSaveState.hasUnsavedChanges = event.payload.hasUnsavedChanges;
-        currentSaveState.currentFilePath = event.payload.currentFilePath;
-        if (!event.payload.hasUnsavedChanges) {
-          currentSaveState.lastSavedAt = new Date().toISOString();
-        }
-        currentSaveState.isSaving = false;
-      }
-    );
-
     // Listen for menu-triggered saves
     const unlistenMenuSave = listen('menu-save-triggered', async () => {
       console.log('Menu save triggered')
@@ -87,7 +71,9 @@ export const saveService = {
 
       if (isFocused) {
         console.log('Window is focused, proceeding with save', currentWindow.label);
-        this.triggerSave();
+        this.triggerSave(currentWindow.label).then(()=>{
+          saveState.isSaving = false
+        });
       } else {
         console.log('Window is not focused, ignoring shortcut', currentWindow.label);
       }
@@ -105,14 +91,15 @@ export const saveService = {
 
       if (isFocused) {
         console.log('Window is focused, proceeding with save', currentWindow.label);
-        this.triggerSave();
+        this.triggerSave(currentWindow.label).then(()=>{
+          saveState.isSaving = false
+        });
       } else {
         console.log('Window is not focused, ignoring shortcut', currentWindow.label);
       }
     });
 
     listeners.push(
-      () => unlistenStateChanged.then((fn) => fn()),
       () => unlistenMenuSave.then((fn) => fn()),
       () => unlistenShortcutSave.then((fn) => fn())
     );
@@ -128,33 +115,35 @@ export const saveService = {
    * Trigger save operation.
    * Shows save dialog on first save, uses existing path on subsequent saves.
    */
-  async triggerSave(): Promise<boolean> {
+  async triggerSave(windowLabel: string): Promise<boolean> {
     console.log('Triggering save');
-    if (currentSaveState.isSaving) {
+    if (saveState.isSaving) {
       console.log('Save already in progress, skipping');
       return false;
     }
 
-    currentSaveState.isSaving = true;
+    saveState.isSaving = true;
 
     try {
       // Get drawing data
       const drawingData = await getDrawingData();
 
+      const currentWinState = await stateService.getState(windowLabel);
+
       // Determine file path - use existing path or show dialog
       let filePath: string | null = null;
 
-      if (!currentSaveState.currentFilePath) {
+      if (!currentWinState.filePath) {
         // First save - show native save dialog
         filePath = await this.showSaveDialog();
       } else {
         // Use existing path
-        filePath = currentSaveState.currentFilePath;
+        filePath = currentWinState.filePath;
       }
 
       if (!filePath) {
         // User cancelled
-        currentSaveState.isSaving = false;
+        saveState.isSaving = false;
         return false;
       }
 
@@ -166,15 +155,12 @@ export const saveService = {
       console.log('Save result:', result)
 
       if (result.success && result.file_path) {
-        currentSaveState.currentFilePath = result.file_path;
-        currentSaveState.lastSavedAt = new Date().toISOString();
-        currentSaveState.hasUnsavedChanges = false;
         console.log('Drawing saved to:', result.file_path);
 
         // Update window state to "saved"
         const windowLabel = await getCurrentWindowLabel();
         if (result.file_path) {
-          stateService.setSaved(windowLabel, result.file_path);
+         await stateService.setSaved(windowLabel, result.file_path);
         }
 
         // Notify after-save callbacks (for change detection)
@@ -190,13 +176,13 @@ export const saveService = {
         if (result.error) {
           console.error('Save failed:', result.error);
         }
-        currentSaveState.isSaving = false;
+        saveState.isSaving = false;
         return false;
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('Save error:', errorMessage);
-      currentSaveState.isSaving = false;
+      saveState.isSaving = false;
       return false;
     }
   },
@@ -207,23 +193,24 @@ export const saveService = {
    */
   async triggerSaveAs(): Promise<boolean> {
     console.log('Triggering save as');
-    if (currentSaveState.isSaving) {
+    if (saveState.isSaving) {
       console.log('Save already in progress, skipping');
       return false;
     }
 
-    currentSaveState.isSaving = true;
+    saveState.isSaving = true;
 
     try {
       // Get drawing data
       const drawingData = await getDrawingData();
 
       // Always show save dialog for "Save As"
+      //TODO shunyun 2025/12/23: pass the current file path as the default path
       const filePath = await this.showSaveDialog();
 
       if (!filePath) {
         // User cancelled
-        currentSaveState.isSaving = false;
+        saveState.isSaving = false;
         return false;
       }
 
@@ -233,15 +220,12 @@ export const saveService = {
       });
 
       if (result.success && result.file_path) {
-        currentSaveState.currentFilePath = result.file_path;
-        currentSaveState.lastSavedAt = new Date().toISOString();
-        currentSaveState.hasUnsavedChanges = false;
         console.log('Drawing saved to:', result.file_path);
 
         // Update window state to "saved"
         const windowLabel = await getCurrentWindowLabel();
         if (result.file_path) {
-          stateService.setSaved(windowLabel, result.file_path);
+         await stateService.setSaved(windowLabel, result.file_path);
         }
 
         // Notify after-save callbacks (for change detection)
@@ -257,13 +241,13 @@ export const saveService = {
         if (result.error) {
           console.error('Save failed:', result.error);
         }
-        currentSaveState.isSaving = false;
+        saveState.isSaving = false;
         return false;
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('Save error:', errorMessage);
-      currentSaveState.isSaving = false;
+      saveState.isSaving = false;
       return false;
     }
   },
@@ -271,7 +255,7 @@ export const saveService = {
   /**
    * Show the native save file dialog.
    */
-  async showSaveDialog(): Promise<string | null> {
+  async showSaveDialog(defaultPath?: string): Promise<string | null> {
     return await save({
       filters: [
         {
@@ -287,52 +271,16 @@ export const saveService = {
           extensions: ['*'],
         },
       ],
-      defaultPath: currentSaveState.currentFilePath || 'untitled.excalidraw',
+      defaultPath: defaultPath || 'untitled.excalidraw',
       title: 'Save Drawing',
     });
-  },
-
-  /**
-   * Mark drawing as having unsaved changes.
-   * Call this when the user modifies the drawing.
-   */
-  markUnsaved(): void {
-    currentSaveState.hasUnsavedChanges = true;
   },
 
   /**
    * Get current save state.
    */
   getState(): SaveState {
-    return { ...currentSaveState };
-  },
-
-  /**
-   * Check if save is currently in progress.
-   */
-  isSaving(): boolean {
-    return currentSaveState.isSaving;
-  },
-
-  /**
-   * Check if there are unsaved changes.
-   */
-  hasUnsavedChanges(): boolean {
-    return currentSaveState.hasUnsavedChanges;
-  },
-
-  /**
-   * Get current file path if saved.
-   */
-  getCurrentPath(): string | null {
-    return currentSaveState.currentFilePath;
-  },
-
-  /**
-   * Get drawing data from Excalidraw canvas.
-   */
-  async getDrawingDataFromCanvas(): Promise<unknown> {
-    return getDrawingData();
+    return { ...saveState };
   },
 
   /**

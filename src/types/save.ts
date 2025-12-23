@@ -6,12 +6,6 @@
  * Tracks the current save status of the drawing.
  */
 export interface SaveState {
-  /** True if drawing has modifications since last save */
-  hasUnsavedChanges: boolean;
-  /** Absolute path to saved file; null if never saved */
-  currentFilePath: string | null;
-  /** ISO 8601 timestamp of last successful save */
-  lastSavedAt: string | null;
   /** True if save operation is in progress */
   isSaving: boolean;
 }

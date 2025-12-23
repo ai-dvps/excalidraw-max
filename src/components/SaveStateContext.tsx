@@ -4,7 +4,7 @@
  * Provides React context for managing save state across components.
  */
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useEffect, useState } from 'react';
 import { saveService } from '../services/saveService';
 import { openService } from '../services/openService';
 import type { SaveState } from '../types/save';
@@ -12,10 +12,7 @@ import type { SaveState } from '../types/save';
 // Context type
 interface SaveStateContextValue {
   saveState: SaveState;
-  save: () => Promise<boolean>;
-  markUnsaved: () => void;
   isSaving: boolean;
-  hasUnsavedChanges: boolean;
 }
 
 // Create context with undefined as default
@@ -49,21 +46,9 @@ export function SaveStateProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const save = useCallback(async () => {
-    return saveService.triggerSave();
-  }, []);
-
-  const markUnsaved = useCallback(() => {
-    saveService.markUnsaved();
-    setSaveState(saveService.getState());
-  }, []);
-
   const value: SaveStateContextValue = {
     saveState,
-    save,
-    markUnsaved,
     isSaving: saveState.isSaving,
-    hasUnsavedChanges: saveState.hasUnsavedChanges,
   };
 
   // Don't render children until initialized
@@ -76,30 +61,4 @@ export function SaveStateProvider({ children }: { children: React.ReactNode }) {
       {children}
     </SaveStateContext.Provider>
   );
-}
-
-/**
- * Hook to access save state.
- */
-export function useSaveState() {
-  const context = useContext(SaveStateContext);
-  if (context === undefined) {
-    throw new Error('useSaveState must be used within a SaveStateProvider');
-  }
-  return context;
-}
-
-/**
- * Hook to access save functionality.
- */
-export function useSave() {
-  const { save, markUnsaved, saveState } = useSaveState();
-  return {
-    save,
-    markUnsaved,
-    hasUnsavedChanges: saveState.hasUnsavedChanges,
-    isSaving: saveState.isSaving,
-    currentFilePath: saveState.currentFilePath,
-    lastSavedAt: saveState.lastSavedAt,
-  };
 }

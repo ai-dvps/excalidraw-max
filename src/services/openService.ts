@@ -7,11 +7,11 @@
  * - Create new windows with loaded content
  */
 
-import { invoke } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
-import { open } from '@tauri-apps/plugin-dialog';
-import type { LoadResult, InitialData } from '../types/open';
-import { stateService } from './stateService';
+import {invoke} from '@tauri-apps/api/core';
+import {listen} from '@tauri-apps/api/event';
+import {open} from '@tauri-apps/plugin-dialog';
+import type {InitialData, LoadResult} from '../types/open';
+import {stateService} from './stateService';
 
 // Module-level state
 let currentOpenState = {
@@ -49,7 +49,7 @@ export const openService = {
     const unlistenMenuOpen = listen('menu-open-triggered', async () => {
       console.log('Menu open triggered');
       // Check if this window is focused before opening
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const {getCurrentWindow} = await import('@tauri-apps/api/window');
       const currentWindow = getCurrentWindow();
       const isFocused = await currentWindow.isFocused();
 
@@ -67,7 +67,7 @@ export const openService = {
       console.log('Shortcut open triggered');
 
       // Check if this window is focused before opening
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const {getCurrentWindow} = await import('@tauri-apps/api/window');
       const currentWindow = getCurrentWindow();
       const isFocused = await currentWindow.isFocused();
 
@@ -227,7 +227,7 @@ export const openService = {
         // Use the returned window_label from the newly created window
         if (filePath && result.window_label) {
           console.log(`Setting saved state for new window: ${result.window_label}`);
-          stateService.setSaved(result.window_label, filePath);
+          await stateService.setSaved(result.window_label, filePath);
         }
 
         // Notify after-open callbacks (for change detection)
@@ -235,7 +235,7 @@ export const openService = {
 
         return true;
       } else {
-        console.error('Failed to create window:',result, result.error);
+        console.error('Failed to create window:', result, result.error);
         currentOpenState.error = result.error || 'Unknown error';
         return false;
       }
@@ -251,7 +251,7 @@ export const openService = {
    * Get current open state.
    */
   getState() {
-    return { ...currentOpenState };
+    return {...currentOpenState};
   },
 
   /**

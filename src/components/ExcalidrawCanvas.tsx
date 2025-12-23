@@ -3,7 +3,6 @@ import {getCurrentWindow} from '@tauri-apps/api/window';
 import {Excalidraw} from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 import {ErrorBoundary} from './ErrorBoundary';
-import {useSaveState} from './SaveStateContext';
 import {saveService} from '../services/saveService';
 import {openService} from '../services/openService';
 import {stateService} from '../services/stateService.ts';
@@ -79,7 +78,6 @@ interface ExcalidrawCanvasProps {
 
 export function ExcalidrawCanvas({initialData: propInitialData}: ExcalidrawCanvasProps): React.ReactElement {
   const excalidrawAPI = useRef<ExcalidrawAPI | null>(null);
-  const {markUnsaved} = useSaveState();
 
   // Window close handler for unsaved changes confirmation
   useWindowCloseHandler();
@@ -191,11 +189,10 @@ export function ExcalidrawCanvas({initialData: propInitialData}: ExcalidrawCanva
         currentFilesCount !== savedSignatureRef.current.filesCount;
 
       if (hasChanged) {
-        markUnsaved();
         stateService.setEdited(getCurrentWindow().label);
       }
     }, 500), // 500ms debounce for UI responsiveness
-    [markUnsaved]
+    []
   );
 
   const handleChange = useCallback(
@@ -235,20 +232,6 @@ export function ExcalidrawCanvas({initialData: propInitialData}: ExcalidrawCanva
   useEffect(() => {
     return openService.onAfterOpen(updateSavedSignature);
   }, [updateSavedSignature]);
-
-  // Update window title after save (for new files that were just saved)
-  useEffect(() => {
-    return saveService.onAfterSaveWithPath(async (filePath: string) => {
-      const fileName = filePath.split('/').pop()?.replace(/\.(excalidraw|json)$/i, '') || 'Untitled';
-      try {
-        const appWindow = getCurrentWindow();
-        await appWindow.setTitle(fileName);
-        console.log('Window title updated after save:', fileName);
-      } catch (err) {
-        console.error('Failed to update window title after save:', err);
-      }
-    });
-  }, []);
 
   return (
     <ErrorBoundary>

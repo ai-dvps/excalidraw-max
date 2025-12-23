@@ -186,7 +186,8 @@ export const stateService = {
       return;
     }
     // Extract filename from path
-    let title = current.filePath?.split('/').pop()  || "Untitled";
+
+    let title = current.filePath?.split('/').pop()?.replace(/\.(excalidraw|json)$/i, '') || 'Untitled';
     // Update Rust backend
     if (current.state === 'edited') {
       title = `[edited] ${title}`;
