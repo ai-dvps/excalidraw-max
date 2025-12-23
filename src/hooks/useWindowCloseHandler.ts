@@ -7,7 +7,7 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { message } from '@tauri-apps/plugin-dialog';
-import { windowStates } from './useWindowState';
+import { stateService } from '../services/stateService';
 
 /**
  * Hook for handling window close with unsaved changes confirmation.
@@ -46,7 +46,7 @@ export function useWindowCloseHandler(): void {
       const win = getCurrentWindow();
       const windowLabel = (win as any).label || 'main';
 
-      const currentState = windowStates.get(windowLabel);
+      const currentState = await  stateService.getState(windowLabel);
       const hasUnsaved = currentState?.hasUnsavedChanges || false;
 
       if (!hasUnsaved) {
@@ -102,17 +102,6 @@ export function useWindowCloseHandler(): void {
         const win = getCurrentWindow();
         const windowLabel = (win as any).label || 'main';
         console.log(`[Close Handler] Window label: ${windowLabel}`);
-
-        // Initialize state for this window if not exists (sync with useWindowState)
-        if (!windowStates.has(windowLabel)) {
-          console.log(`[Close Handler] Initializing state for ${windowLabel}`);
-          windowStates.set(windowLabel, {
-            state: 'created',
-            filePath: null,
-            lastSavedAt: null,
-            hasUnsavedChanges: false,
-          });
-        }
 
         unlisten = await win.onCloseRequested(handleClose);
         console.log(`[Close Handler] Registered handler #${handlerCount} for window: ${windowLabel}`);

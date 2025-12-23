@@ -1,15 +1,15 @@
-import React, { useCallback, useRef, useEffect, useState } from 'react';
-import { getCurrentWindow } from '@tauri-apps/api/window';
-import { Excalidraw } from '@excalidraw/excalidraw';
+import React, {useCallback, useRef, useEffect, useState} from 'react';
+import {getCurrentWindow} from '@tauri-apps/api/window';
+import {Excalidraw} from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
-import { ErrorBoundary } from './ErrorBoundary';
-import { useSaveState } from './SaveStateContext';
-import { saveService } from '../services/saveService';
-import { openService } from '../services/openService';
-import { useFileLoader } from '../hooks/useFileLoader';
-import { useWindowState } from '../hooks/useWindowState';
-import { useWindowCloseHandler } from '../hooks/useWindowCloseHandler';
-import type { InitialData } from '../types/open';
+import {ErrorBoundary} from './ErrorBoundary';
+import {useSaveState} from './SaveStateContext';
+import {saveService} from '../services/saveService';
+import {openService} from '../services/openService';
+import {stateService} from '../services/stateService.ts';
+import {useFileLoader} from '../hooks/useFileLoader';
+import {useWindowCloseHandler} from '../hooks/useWindowCloseHandler';
+import type {InitialData} from '../types/open';
 
 // Type for Excalidraw API - using any to avoid type import issues
 type ExcalidrawAPI = any;
@@ -77,12 +77,9 @@ interface ExcalidrawCanvasProps {
   initialData?: InitialData | null;
 }
 
-export function ExcalidrawCanvas({ initialData: propInitialData }: ExcalidrawCanvasProps): React.ReactElement {
+export function ExcalidrawCanvas({initialData: propInitialData}: ExcalidrawCanvasProps): React.ReactElement {
   const excalidrawAPI = useRef<ExcalidrawAPI | null>(null);
-  const { markUnsaved } = useSaveState();
-
-  // Window state hook for state machine
-  const { setEdited, setSaved } = useWindowState();
+  const {markUnsaved} = useSaveState();
 
   // Window close handler for unsaved changes confirmation
   useWindowCloseHandler();
@@ -96,7 +93,7 @@ export function ExcalidrawCanvas({ initialData: propInitialData }: ExcalidrawCan
   } | null>(null);
 
   // Use file loader hook to get initial data from file open operation
-  const { initialData: fileInitialData, error: fileError } = useFileLoader();
+  const {initialData: fileInitialData, error: fileError} = useFileLoader();
 
   // Use prop data if provided, otherwise use file loader data
   const initialData = fileInitialData ?? propInitialData ?? null;
@@ -129,9 +126,8 @@ export function ExcalidrawCanvas({ initialData: propInitialData }: ExcalidrawCan
           captureUpdate: 'IMMEDIATELY' as any,
         });
 
-        setSaved(initialData.filePath);
-
         setDataLoaded(true);
+        stateService.setSaved(getCurrentWindow().label, initialData.filePath);
         console.log('Drawing loaded successfully');
       }
     };
@@ -161,7 +157,7 @@ export function ExcalidrawCanvas({ initialData: propInitialData }: ExcalidrawCan
         files: excalidrawAPI.current.getFiles(),
       };
     }
-    return { elements: [], appState: {}, files: {} };
+    return {elements: [], appState: {}, files: {}};
   }, []);
 
   // Set up drawing data getter for save service
@@ -196,10 +192,10 @@ export function ExcalidrawCanvas({ initialData: propInitialData }: ExcalidrawCan
 
       if (hasChanged) {
         markUnsaved();
-        setEdited();
+        stateService.setEdited(getCurrentWindow().label);
       }
     }, 500), // 500ms debounce for UI responsiveness
-    [markUnsaved, setEdited]
+    [markUnsaved]
   );
 
   const handleChange = useCallback(

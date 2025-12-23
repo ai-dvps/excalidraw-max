@@ -5,8 +5,11 @@
  * Provides state management API that integrates with the Rust backend.
  */
 
-import { invoke } from '@tauri-apps/api/core';
-import type { WindowState } from '../types/windowState';
+import {invoke} from '@tauri-apps/api/core';
+import type {WindowState} from '../types/windowState';
+// Need to import listen for the init function
+import {listen} from '@tauri-apps/api/event';
+import {getCurrentWindow} from "@tauri-apps/api/window";
 
 // Module-level state cache (frontend mirror of backend state)
 const stateCache: Map<string, WindowState> = new Map();
@@ -37,7 +40,7 @@ export const stateService = {
     const unlistenStateChanged = listen<{ windowLabel: string; state: WindowState }>(
       'window-state-changed',
       (event) => {
-        const { windowLabel, state } = event.payload;
+        const {windowLabel, state} = event.payload;
         stateCache.set(windowLabel, state);
 
         // Notify listeners
@@ -65,7 +68,7 @@ export const stateService = {
 
     // Fetch from Rust backend
     try {
-      const state = await invoke<WindowState>('get_window_state', { windowLabel });
+      const state = await invoke<WindowState>('get_window_state', {windowLabel});
       stateCache.set(windowLabel, state);
       return state;
     } catch (error) {
@@ -77,7 +80,12 @@ export const stateService = {
   /**
    * Transition to saved state (after save or open)
    */
-  async setSaved(windowLabel: string, filePath: string): Promise<void> {
+  async setSaved(windowLabel: string, filePath?: string): Promise<void> {
+    if (!filePath) {
+      console.log("set saved called with no file path, return directly")
+      return;
+    }
+
     const newState: WindowState = {
       state: 'saved',
       filePath,
@@ -87,6 +95,7 @@ export const stateService = {
 
     // Update cache
     stateCache.set(windowLabel, newState);
+    await this.updateWindowTitle(windowLabel);
 
     // Notify listeners
     const listeners = stateListeners.get(windowLabel);
@@ -97,7 +106,7 @@ export const stateService = {
 
     // Update Rust backend
     try {
-      await invoke('mark_window_saved', { windowLabel, filePath });
+      await invoke('mark_window_saved', {windowLabel, filePath});
     } catch (error) {
       console.error('Failed to mark window as saved:', error);
     }
@@ -112,7 +121,7 @@ export const stateService = {
     // Only transition if not already in edited state
     if (current.state === 'edited') {
       // Just update the flag, don't trigger title change
-      stateCache.set(windowLabel, { ...current, hasUnsavedChanges: true });
+      stateCache.set(windowLabel, {...current, hasUnsavedChanges: true});
       return;
     }
 
@@ -125,6 +134,7 @@ export const stateService = {
 
     // Update cache
     stateCache.set(windowLabel, newState);
+    await this.updateWindowTitle(windowLabel);
 
     // Notify listeners
     const listeners = stateListeners.get(windowLabel);
@@ -134,7 +144,7 @@ export const stateService = {
 
     // Update Rust backend
     try {
-      await invoke('mark_window_edited', { windowLabel });
+      await invoke('mark_window_edited', {windowLabel});
     } catch (error) {
       console.error('Failed to mark window as edited:', error);
     }
@@ -157,10 +167,34 @@ export const stateService = {
 
     // Update Rust backend
     try {
-      await invoke('reset_window_created', { windowLabel });
+      await invoke('reset_window_created', {windowLabel});
     } catch (error) {
       console.error('Failed to reset window state:', error);
     }
+  },
+
+  async updateWindowTitle(windowLabel: string): Promise<void> {
+    let currentWindow = getCurrentWindow();
+    if (currentWindow.label !== windowLabel) {
+      console.log("updateWindowTitle called for a window that is not current", currentWindow.label, windowLabel)
+      return;
+    }
+    // Update cache
+    const current = stateCache.get(windowLabel) || getInitialState();
+    console.log("generating title for window", current.state, current.filePath, currentWindow.title())
+    if (current.state === 'created' && !current.filePath) {
+      return;
+    }
+    // Extract filename from path
+    let title = current.filePath?.split('/').pop()  || "Untitled";
+    // Update Rust backend
+    if (current.state === 'edited') {
+      title = `[edited] ${title}`;
+    } else {
+      title = `[saved] ${title}`;
+    }
+
+    await currentWindow.setTitle(title);
   },
 
   /**
@@ -210,8 +244,5 @@ export const stateService = {
     stateCache.clear();
   },
 };
-
-// Need to import listen for the init function
-import { listen } from '@tauri-apps/api/event';
 
 export default stateService;
