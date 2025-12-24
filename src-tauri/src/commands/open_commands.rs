@@ -83,6 +83,21 @@ pub async fn read_drawing_file(_app: AppHandle, path: String) -> Result<LoadResu
         });
     }
 
+    // Validate it's an Excalidraw file (new format with type field)
+    let file_type = parsed.get("type").and_then(|v| v.as_str());
+    if file_type != Some("excalidraw") {
+        // Try to support old format for backwards compatibility
+        if parsed.get("elements").is_none() {
+            return Ok(LoadResult {
+                success: false,
+                data: None,
+                error: Some("File is not a valid Excalidraw drawing".to_string()),
+            });
+        }
+        // Old format detected, proceed with reading (elements may be in old format)
+        println!("Detected old format Excalidraw file, attempting to read...");
+    }
+
     // Extract and validate elements array
     let elements = parsed
         .get("elements")

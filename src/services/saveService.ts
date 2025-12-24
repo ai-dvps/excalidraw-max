@@ -48,7 +48,22 @@ async function getDrawingData(): Promise<unknown> {
       return getter();
     }
   }
-  return { elements: [], appState: {} };
+  return { elements: [], appState: {}, files: {} };
+}
+
+/**
+ * Transform drawing data to Excalidraw-compatible format.
+ * Converts from internal format to standard Excalidraw JSON format.
+ */
+function transformToExcalidrawFormat(data: any): any {
+  return {
+    type: 'excalidraw',
+    version: 2,
+    source: 'excalidraw-max',
+    elements: data.elements || [],
+    appState: data.appState || {},
+    files: data.files || {},
+  };
 }
 
 /**
@@ -148,7 +163,7 @@ export const saveService = {
       }
 
       const result = await invoke<SaveResult>('save_drawing', {
-        jsonData: JSON.stringify(drawingData),
+        jsonData: JSON.stringify(transformToExcalidrawFormat(drawingData)),
         filePath: filePath,
       });
 
@@ -215,7 +230,7 @@ export const saveService = {
       }
 
       const result = await invoke<SaveResult>('save_drawing', {
-        jsonData: JSON.stringify(drawingData),
+        jsonData: JSON.stringify(transformToExcalidrawFormat(drawingData)),
         filePath: filePath,
       });
 
