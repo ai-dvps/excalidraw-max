@@ -1,11 +1,10 @@
 /// State commands for window state management.
 ///
 /// Provides Tauri commands for managing window save state (created/saved/edited).
-
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 
-use super::save_commands::{WindowStateRust, AppState};
+use super::save_commands::{AppState, WindowStateRust};
 
 /// Actions for close confirmation dialog
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -84,7 +83,11 @@ pub fn update_window_state(
 
 /// Mark window as saved with file path
 #[tauri::command]
-pub fn mark_window_saved(app: AppHandle, window_label: String, file_path: String) -> Result<(), String> {
+pub fn mark_window_saved(
+    app: AppHandle,
+    window_label: String,
+    file_path: String,
+) -> Result<(), String> {
     let states = get_window_states(&app);
 
     let mut states_guard = states.window_states.lock().map_err(|e| e.to_string())?;
@@ -136,7 +139,10 @@ pub fn has_unsaved_changes(app: AppHandle, window_label: String) -> Result<bool,
 
 /// Get file path for window (for close dialog message)
 #[tauri::command]
-pub fn get_window_file_path(app: AppHandle, window_label: String) -> Result<Option<String>, String> {
+pub fn get_window_file_path(
+    app: AppHandle,
+    window_label: String,
+) -> Result<Option<String>, String> {
     let states = get_window_states(&app);
     let states_guard = states.window_states.lock().map_err(|e| e.to_string())?;
     let state = states_guard.get(&window_label);
@@ -147,7 +153,10 @@ pub fn get_window_file_path(app: AppHandle, window_label: String) -> Result<Opti
 /// Confirm close action with native dialog (simplified - returns action based on dialog result)
 /// Note: The actual dialog is handled by the frontend for better async handling
 #[tauri::command]
-pub async fn confirm_close_with_unsaved(app: AppHandle, window_label: String) -> Result<CloseConfirmationResult, String> {
+pub async fn confirm_close_with_unsaved(
+    app: AppHandle,
+    window_label: String,
+) -> Result<CloseConfirmationResult, String> {
     // Check if window has unsaved changes
     let has_changes = has_unsaved_changes(app.clone(), window_label.clone())?;
 

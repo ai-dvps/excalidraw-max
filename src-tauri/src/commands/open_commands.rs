@@ -168,17 +168,13 @@ pub fn create_window_with_data(
     };
 
     // Create new window
-    match WebviewWindowBuilder::new(
-        &_app,
-        &window_label,
-        WebviewUrl::App("index.html".into()),
-    )
-    .title("Excalidraw")
-    .inner_size(1000.0, 700.0)
-    .resizable(true)
-    .center()
-    .devtools(true)
-    .build()
+    match WebviewWindowBuilder::new(&_app, &window_label, WebviewUrl::App("index.html".into()))
+        .title("Excalidraw")
+        .inner_size(1000.0, 700.0)
+        .resizable(true)
+        .center()
+        .devtools(true)
+        .build()
     {
         Ok(window) => {
             println!("Window created successfully: {}", window_label);
@@ -210,11 +206,19 @@ pub fn create_window_with_data(
                 println!("Initial data injected into window: {}", window_label);
             }
 
-            Ok(WindowResult { success: true, window_label: Some(window_label), error: None })
+            Ok(WindowResult {
+                success: true,
+                window_label: Some(window_label),
+                error: None,
+            })
         }
         Err(e) => {
             println!("Failed to create window: {}", e);
-            Ok(WindowResult { success: false, window_label: None, error: Some(e.to_string()) })
+            Ok(WindowResult {
+                success: false,
+                window_label: None,
+                error: Some(e.to_string()),
+            })
         }
     }
 }

@@ -1,0 +1,123 @@
+openapi: 3.0.0
+info:
+  title: User Settings API
+  version: 1.0.0
+  description: Tauri commands for user settings management
+
+paths:
+  /settings/load:
+    get:
+      summary: Load user settings
+      description: Retrieves all user settings from the Tauri store
+      responses:
+        '200':
+          description: Settings loaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSettings'
+        '500':
+          description: Failed to load settings (file missing or corrupted)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /settings/save:
+    post:
+      summary: Save user settings
+      description: Persists user settings to the Tauri store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserSettings'
+      responses:
+        '200':
+          description: Settings saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '400':
+          description: Invalid settings data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Failed to save settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /settings/reset:
+    post:
+      summary: Reset to default settings
+      description: Restores all settings to default values
+      responses:
+        '200':
+          description: Settings reset successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSettings'
+        '500':
+          description: Failed to reset settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    UserSettings:
+      type: object
+      description: Top-level settings container
+      properties:
+        general:
+          type: object
+          description: General application settings
+          additionalProperties: true
+        appearance:
+          type: object
+          description: Appearance preferences
+          additionalProperties: true
+        shortcuts:
+          type: object
+          description: Keyboard shortcut configurations
+          additionalProperties: true
+        editor:
+          $ref: '#/components/schemas/EditorSettings'
+      required:
+        - editor
+
+    EditorSettings:
+      type: object
+      description: Editor-specific configuration
+      properties:
+        defaultBackgroundColor:
+          type: string
+          description: Default hex color code for canvas background
+          pattern: '^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$'
+          example: '#ffffff'
+      required:
+        - defaultBackgroundColor
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: string
+          description: Technical details (development only)

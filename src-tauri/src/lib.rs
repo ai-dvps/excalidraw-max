@@ -1,10 +1,13 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 
-use commands::save_commands::{mark_unsaved, save_drawing, AppSaveState, AppState, WindowStateRust};
-use commands::open_commands::{read_drawing_file, create_window_with_data};
+use commands::open_commands::{create_window_with_data, read_drawing_file};
+use commands::save_commands::{
+    mark_unsaved, save_drawing, AppSaveState, AppState, WindowStateRust,
+};
+use commands::settings_commands::{load_settings, open_settings_window, reset_settings, save_settings};
 use commands::state_commands::{
-    get_window_state, update_window_state, mark_window_saved, mark_window_edited,
-    confirm_close_with_unsaved, reset_window_created,
+    confirm_close_with_unsaved, get_window_state, mark_window_edited, mark_window_saved,
+    reset_window_created, update_window_state,
 };
 use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
 use tauri::{Emitter, Manager};
@@ -45,11 +48,13 @@ fn create_app_menu(app: &tauri::App) -> Result<(), tauri::Error> {
     let fullscreen_item = PredefinedMenuItem::fullscreen(app, None)?;
     let services_item = PredefinedMenuItem::services(app, None)?;
 
-    // Create File submenu with Save and predefined items
+    // Create App submenu with predefined items
     let app_menu = SubmenuBuilder::new(app, "App")
         .item(&about_item)
         .separator()
         .item(&services_item)
+        .separator()
+        .text("settings", "Settings...")
         .separator()
         .item(&quit_item) // Predefined: Quit
         .build()?;
@@ -131,6 +136,10 @@ fn create_app_menu(app: &tauri::App) -> Result<(), tauri::Error> {
                 // Emit event for frontend to handle open
                 let _ = app_handle.emit("menu-open-triggered", ());
             }
+            "settings" => {
+                // Emit event for frontend to open settings window
+                let _ = app_handle.emit("menu-settings-triggered", ());
+            }
             _ => {
                 // Other menu events are handled by predefined items (quit, about, etc.)
                 println!("Menu event: {:?}", event.id());
@@ -144,6 +153,8 @@ fn create_app_menu(app: &tauri::App) -> Result<(), tauri::Error> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_window_state::Builder::default().build())
@@ -158,7 +169,11 @@ pub fn run() {
             mark_window_saved,
             mark_window_edited,
             confirm_close_with_unsaved,
-            reset_window_created
+            reset_window_created,
+            load_settings,
+            save_settings,
+            reset_settings,
+            open_settings_window
         ])
         .setup(|app| {
             // Initialize save state
@@ -178,7 +193,7 @@ pub fn run() {
             // Create application menu with Save item
             create_app_menu(app)?;
 
-            // Register global shortcuts for save (Cmd/Ctrl+S) and open (Cmd/Ctrl+O)
+            // Register global shortcuts for save (Cmd/Ctrl+S), open (Cmd/Ctrl+O), and settings (Cmd/Ctrl+,)
             #[cfg(desktop)]
             {
                 let app_handle = app.handle().clone();
@@ -190,11 +205,17 @@ pub fn run() {
                 #[cfg(target_os = "macos")]
                 let open_shortcut = Shortcut::new(Some(Modifiers::SUPER), Code::KeyO);
 
+                #[cfg(target_os = "macos")]
+                let settings_shortcut = Shortcut::new(Some(Modifiers::SUPER), Code::Comma);
+
                 #[cfg(not(target_os = "macos"))]
                 let save_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::KeyS);
 
                 #[cfg(not(target_os = "macos"))]
                 let open_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::KeyO);
+
+                #[cfg(not(target_os = "macos"))]
+                let settings_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::Comma);
 
                 app.handle().plugin(
                     tauri_plugin_global_shortcut::Builder::new()
@@ -204,6 +225,8 @@ pub fn run() {
                                     let _ = app_handle.emit("shortcut-save-triggered", ());
                                 } else if shortcut == &open_shortcut {
                                     let _ = app_handle.emit("shortcut-open-triggered", ());
+                                } else if shortcut == &settings_shortcut {
+                                    let _ = app_handle.emit("shortcut-settings-triggered", ());
                                 }
                             }
                         })
@@ -212,6 +235,7 @@ pub fn run() {
 
                 app.global_shortcut().register(save_shortcut)?;
                 app.global_shortcut().register(open_shortcut)?;
+                app.global_shortcut().register(settings_shortcut)?;
             }
 
             Ok(())

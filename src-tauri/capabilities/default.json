@@ -4,7 +4,8 @@
   "description": "Capability for all windows",
   "windows": [
     "main",
-    "excalidraw-*"
+    "excalidraw-*",
+    "settings"
   ],
   "permissions": [
     "core:default",
@@ -19,7 +20,11 @@
       "identifier": "core:event:allow-listen",
       "allow": [
         {
-          "windows": ["main", "excalidraw-*"]
+          "windows": [
+            "main",
+            "excalidraw-*",
+            "settings"
+          ]
         }
       ]
     },
@@ -27,7 +32,11 @@
       "identifier": "core:window:allow-set-title",
       "allow": [
         {
-          "windows": ["main", "excalidraw-*"]
+          "windows": [
+            "main",
+            "excalidraw-*",
+            "settings"
+          ]
         }
       ]
     },
@@ -35,7 +44,11 @@
       "identifier": "core:window:allow-destroy",
       "allow": [
         {
-          "windows": ["main", "excalidraw-*"]
+          "windows": [
+            "main",
+            "excalidraw-*",
+            "settings"
+          ]
         }
       ]
     },
@@ -43,10 +56,40 @@
       "identifier": "core:window:allow-close",
       "allow": [
         {
-          "windows": ["main", "excalidraw-*"]
+          "windows": [
+            "main",
+            "excalidraw-*",
+            "settings"
+          ]
         }
       ]
-    }
+    },
+    {
+      "identifier": "core:window:allow-show",
+      "allow": [
+        {
+          "windows": [
+            "main",
+            "excalidraw-*",
+            "settings"
+          ]
+        }
+      ]
+    },
+    {
+      "identifier": "core:window:allow-set-focus",
+      "allow": [
+        {
+          "windows": [
+            "main",
+            "excalidraw-*",
+            "settings"
+          ]
+        }
+      ]
+    },
+    "store:default",
+    "notification:default"
   ],
   "platforms": [
     "macOS",

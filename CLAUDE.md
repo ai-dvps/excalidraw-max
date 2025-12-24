@@ -867,6 +867,8 @@ Tauri v2 requires explicit permissions for each window. Use wildcard patterns fo
 - Local filesystem (JSON/.excalidraw files) (003-open-file)
 - Rust HashMap for window state (state_commands.rs) + frontend sync via events (004-window-state-machine)
 - stateService as single source of truth for window state machine (004-window-state-machine)
+- TypeScript 5.6, Rust 2024 edition (Tauri v2) + Ant Design (UI components), Tauri store plugin (persistence), Tauri notification plugin (toasts) (005-user-settings)
+- Tauri store plugin (local JSON file at app config path) (005-user-settings)
 
 ## Recent Changes
 - 001-auto-create-excalidraw: Added TypeScript 5.6, Rust edition 2024 (Tauri v2) + React 18, @excalidraw/excalidraw (to be added), @tauri-apps/api v2
