@@ -1,0 +1,55 @@
+# Contracts: Create New File Feature
+#
+# Note: This feature reuses existing Tauri commands and event patterns.
+# No new API contracts required.
+
+## Reused Commands
+
+### create_window_with_data
+
+Creates a new Tauri window with drawing data.
+
+**Parameters**:
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| elements | array | Yes | Drawing elements (empty for new file) |
+| appState | object | Yes | Canvas state including settings |
+| files | object | Yes | Files object (empty for new file) |
+| filePath | string | No | File path (null for new file) |
+| name | string | No | Window title (null for auto-generated) |
+
+**Response**: WindowResult with success and window_label
+
+## Reused Events
+
+### menu-new-triggered
+
+Emitted when user selects "New" from File menu.
+
+**Payload**: empty object
+
+### shortcut-new-triggered
+
+Emitted when user presses Ctrl+N or Cmd+N.
+
+**Payload**: empty object
+
+## TypeScript Interfaces
+
+```typescript
+interface InitialData {
+  elements: readonly any[];
+  appState: {
+    viewBackgroundColor?: string;
+    [key: string]: any;
+  };
+  files: Record<string, unknown>;
+  filePath: null;
+}
+
+interface WindowResult {
+  success: boolean;
+  window_label?: string;
+  error?: string;
+}
+```

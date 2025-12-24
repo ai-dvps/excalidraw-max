@@ -68,8 +68,12 @@ fn create_app_menu(app: &tauri::App) -> Result<(), tauri::Error> {
         .accelerator("CmdOrControl+O")
         .build(app)?;
 
+    let new_item = MenuItemBuilder::with_id("new", "New")
+        .accelerator("CmdOrControl+N")
+        .build(app)?;
+
     let file_menu = SubmenuBuilder::new(app, "File")
-        .text("new", "New")
+        .item(&new_item)
         .item(&open_item)
         .separator()
         .item(&save_item)
@@ -144,6 +148,10 @@ fn create_app_menu(app: &tauri::App) -> Result<(), tauri::Error> {
                 // Emit event for frontend to open settings window
                 let _ = app_handle.emit("menu-settings-triggered", ());
             }
+            "new" => {
+                // Emit event for frontend to create new file
+                let _ = app_handle.emit("menu-new-triggered", ());
+            }
             _ => {
                 // Other menu events are handled by predefined items (quit, about, etc.)
                 println!("Menu event: {:?}", event.id());
@@ -212,6 +220,9 @@ pub fn run() {
                 #[cfg(target_os = "macos")]
                 let settings_shortcut = Shortcut::new(Some(Modifiers::SUPER), Code::Comma);
 
+                #[cfg(target_os = "macos")]
+                let new_shortcut = Shortcut::new(Some(Modifiers::SUPER), Code::KeyN);
+
                 #[cfg(not(target_os = "macos"))]
                 let save_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::KeyS);
 
@@ -220,6 +231,9 @@ pub fn run() {
 
                 #[cfg(not(target_os = "macos"))]
                 let settings_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::Comma);
+
+                #[cfg(not(target_os = "macos"))]
+                let new_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::KeyN);
 
                 app.handle().plugin(
                     tauri_plugin_global_shortcut::Builder::new()
@@ -231,6 +245,8 @@ pub fn run() {
                                     let _ = app_handle.emit("shortcut-open-triggered", ());
                                 } else if shortcut == &settings_shortcut {
                                     let _ = app_handle.emit("shortcut-settings-triggered", ());
+                                } else if shortcut == &new_shortcut {
+                                    let _ = app_handle.emit("shortcut-new-triggered", ());
                                 }
                             }
                         })
@@ -240,6 +256,7 @@ pub fn run() {
                 app.global_shortcut().register(save_shortcut)?;
                 app.global_shortcut().register(open_shortcut)?;
                 app.global_shortcut().register(settings_shortcut)?;
+                app.global_shortcut().register(new_shortcut)?;
             }
 
             Ok(())

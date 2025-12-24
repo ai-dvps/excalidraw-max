@@ -13,6 +13,7 @@ import {listen} from '@tauri-apps/api/event';
 import {open} from '@tauri-apps/plugin-dialog';
 import type {InitialData, LoadResult} from '../types/open';
 import {stateService} from './stateService';
+import {settingsService} from './settingsService';
 
 // Module-level state
 let currentOpenState = {
@@ -46,6 +47,37 @@ export const openService = {
    * Call this once when the app starts.
    */
   init(): () => void {
+    // Listen for menu-triggered new file
+    const unlistenMenuNew = listen('menu-new-triggered', async () => {
+      console.log('[New] Menu new triggered');
+      const {getCurrentWindow} = await import('@tauri-apps/api/window');
+      const currentWindow = getCurrentWindow();
+      const isFocused = await currentWindow.isFocused();
+
+      if (isFocused) {
+        console.log('[New] Window is focused, creating new file', currentWindow.label);
+        this.triggerNew();
+      } else {
+        console.log('[New] Window is not focused, ignoring');
+      }
+    });
+
+    // Listen for shortcut-triggered new file (from global-shortcut plugin)
+    const unlistenShortcutNew = listen('shortcut-new-triggered', async () => {
+      console.log('[New] Shortcut new triggered');
+
+      const {getCurrentWindow} = await import('@tauri-apps/api/window');
+      const currentWindow = getCurrentWindow();
+      const isFocused = await currentWindow.isFocused();
+
+      if (isFocused) {
+        console.log('[New] Window is focused, creating new file', currentWindow.label);
+        this.triggerNew();
+      } else {
+        console.log('[New] Window is not focused, ignoring');
+      }
+    });
+
     // Listen for menu-triggered opens
     const unlistenMenuOpen = listen('menu-open-triggered', async () => {
       console.log('Menu open triggered');
@@ -81,6 +113,8 @@ export const openService = {
     });
 
     listeners.push(
+      () => unlistenMenuNew.then((fn) => fn()),
+      () => unlistenShortcutNew.then((fn) => fn()),
       () => unlistenMenuOpen.then((fn) => fn()),
       () => unlistenShortcutOpen.then((fn) => fn())
     );
@@ -170,6 +204,46 @@ export const openService = {
       console.error('Open error:', errorMessage);
       currentOpenState.error = errorMessage;
       currentOpenState.isLoading = false;
+      return false;
+    }
+  },
+
+  /**
+   * Trigger new file creation.
+   * Creates a new Tauri window with empty canvas and user settings applied.
+   */
+  async triggerNew(): Promise<boolean> {
+    console.log('[New] Triggering new file');
+
+    try {
+      // Load user settings
+      const settings = await settingsService.loadSettings();
+      console.log('[New] Loaded settings:', settings);
+
+      // Create initial data with empty canvas and user settings
+      const initialData: InitialData = {
+        elements: [],
+        appState: {
+          viewBackgroundColor: settings.editor.defaultBackgroundColor,
+        },
+        files: {},
+        filePath: undefined,
+      };
+
+      console.log('[New] Creating new window with settings:', initialData.appState);
+
+      // Always create a new window for new files
+      const success = await this.createNewWindow(initialData);
+
+      if (success) {
+        console.log('[New] New file created successfully');
+      }
+
+      return success;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('[New] Failed to create new file:', errorMessage);
+      currentOpenState.error = errorMessage;
       return false;
     }
   },
