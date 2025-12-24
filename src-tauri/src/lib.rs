@@ -34,6 +34,10 @@ fn create_app_menu(app: &tauri::App) -> Result<(), tauri::Error> {
         .accelerator("CmdOrControl+S")
         .build(app)?;
 
+    let settings_item = MenuItemBuilder::with_id("settings", "Settings...")
+            .accelerator("CmdOrControl+,")
+            .build(app)?;
+
     // Create predefined menu items
     let close_item = PredefinedMenuItem::close_window(app, None)?;
     let quit_item = PredefinedMenuItem::quit(app, None)?;
@@ -54,7 +58,7 @@ fn create_app_menu(app: &tauri::App) -> Result<(), tauri::Error> {
         .separator()
         .item(&services_item)
         .separator()
-        .text("settings", "Settings...")
+        .item(&settings_item)
         .separator()
         .item(&quit_item) // Predefined: Quit
         .build()?;
