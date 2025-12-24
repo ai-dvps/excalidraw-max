@@ -133,7 +133,7 @@ pub async fn open_settings_window(app: AppHandle) -> Result<(), String> {
     )
     .title("Settings")
     .inner_size(700.0, 700.0)
-    .resizable(false)
+    .resizable(true)
     .center()
     .decorations(true)
     .closable(true)
