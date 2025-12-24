@@ -8,6 +8,7 @@
  */
 
 import {invoke} from '@tauri-apps/api/core';
+import {getCurrentWindow} from '@tauri-apps/api/window';
 import {listen} from '@tauri-apps/api/event';
 import {open} from '@tauri-apps/plugin-dialog';
 import type {InitialData, LoadResult} from '../types/open';
@@ -128,7 +129,7 @@ export const openService = {
       }
 
       if (result.data) {
-        // Success - create new window with loaded data
+        // Success - prepare initial data
         const initialData: InitialData = {
           elements: result.data.elements as any[],
           appState: result.data.appState as any,
@@ -136,7 +137,22 @@ export const openService = {
           filePath: filePath,
         };
 
-        const success = await this.createNewWindow(initialData);
+        // Check if current window has an existing file open
+        const currentWindow = getCurrentWindow();
+        const windowLabel = currentWindow.label;
+        const currentState = await stateService.getState(windowLabel);
+        console.log('[Smart Open] Current window state:', windowLabel, currentState.state, currentState.filePath)
+
+        // If current window is NOT in "created" state (has existing file), load in current window
+        // Otherwise, create a new window
+        let success: boolean;
+        if (currentState.state !== 'created' || currentState.filePath) {
+          console.log(`[Smart Open] Current window is not empty, creating new window`);
+          success = await this.createNewWindow(initialData);
+        } else {
+          console.log(`[Smart Open] Current window is empty, loading in current window`);
+          success = await this.loadDataIntoCurrentWindow(initialData, windowLabel);
+        }
 
         if (success) {
           currentOpenState.currentFilePath = filePath;
@@ -242,6 +258,37 @@ export const openService = {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('Failed to create window:', errorMessage);
+      currentOpenState.error = errorMessage;
+      return false;
+    }
+  },
+
+  /**
+   * Load data into the current window instead of creating a new one.
+   * Used when current window already has a file open.
+   */
+  async loadDataIntoCurrentWindow(initialData: InitialData, windowLabel: string): Promise<boolean> {
+    try {
+      console.log('Loading data into current window:', windowLabel);
+      console.log('Elements count:', initialData.elements?.length || 0);
+
+      // Emit event to notify components to load the data
+      const { emit } = await import('@tauri-apps/api/event');
+      await emit('load-canvas-data', initialData);
+
+      // Update window state to "saved" with the file path
+      if (initialData.filePath) {
+        console.log(`Setting saved state for window: ${windowLabel}`);
+        await stateService.setSaved(windowLabel, initialData.filePath);
+      }
+
+      // Notify after-open callbacks (for change detection)
+      afterOpenCallbacks.forEach((callback) => callback());
+
+      return true;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Failed to load data into current window:', errorMessage);
       currentOpenState.error = errorMessage;
       return false;
     }
