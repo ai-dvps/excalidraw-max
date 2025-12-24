@@ -462,11 +462,10 @@ const checkForChanges = useCallback(
       Object.keys(files || {}).length !== savedSignatureRef.current.filesCount;
 
     if (hasChanged) {
-      markUnsaved();
-      setEdited();
+      stateService.setEdited(getCurrentWindow().label);
     }
   }, 500), // 500ms debounce batches rapid changes
-  [markUnsaved, setEdited]
+  []
 );
 
 const handleChange = useCallback(
@@ -641,25 +640,107 @@ if (typeof fileName === 'string' && fileName) {
 
 ### Updating Window Title After Save
 
-When a new window (without an associated file) is saved, the window title should update to the file name. Use `saveService.onAfterSaveWithPath()`:
+Window titles are now automatically updated by `stateService.setSaved()` via the `updateWindowTitle()` method:
 
 ```typescript
-// ExcalidrawCanvas.tsx
-useEffect(() => {
-  return saveService.onAfterSaveWithPath(async (filePath: string) => {
-    const fileName = filePath.split('/').pop()?.replace(/\.(excalidraw|json)$/i, '') || 'Untitled';
-    try {
-      const appWindow = getCurrentWindow();
-      await appWindow.setTitle(fileName);
-      console.log('Window title updated after save:', fileName);
-    } catch (err) {
-      console.error('Failed to update window title after save:', err);
-    }
-  });
-}, []);
+// stateService.setSaved updates the state and title automatically
+await stateService.setSaved(windowLabel, result.file_path);
 ```
 
-The `saveService` calls these callbacks after a successful save with the file path, allowing the window title to be updated.
+**Note:** The `updateWindowTitle()` method:
+1. Only updates title if current window matches the windowLabel
+2. Strips `.excalidraw` and `.json` extensions from filename
+3. Adds `[edited]` or `[saved]` prefix based on state
+
+## Window State Management
+
+### Single Source of Truth Pattern
+
+The application uses `stateService` as the single source of truth for window state. State is managed in Rust (`state_commands.rs`) with frontend sync.
+
+**State Machine States:**
+- `created` - New window, no file path associated
+- `saved` - Has file path, no unsaved changes
+- `edited` - Has unsaved modifications
+
+**Data Flow:**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                  state_commands.rs (Rust)                       │
+│           Single Source of Truth - HashMap                      │
+│  window_states: HashMap<"main" | "excalidraw-*", WindowState>   │
+└─────────────────────────────────────────────────────────────────┘
+           │                                                      │
+           │ 1. create_window_state() on window init              │
+           │ 2. update_window_state() on state changes            │
+           │ 3. emit "window-state-changed" for frontend sync      │
+           │                                                      │
+           ▼                                                      │
+┌─────────────────────────────────────────────────────────────────┐
+│                     stateService.ts                             │
+│                                                                 │
+│  - getState(windowLabel): Get state from Rust                   │
+│  - setSaved(windowLabel, filePath): Transition to saved         │
+│  - setEdited(windowLabel): Transition to edited                 │
+│  - updateWindowTitle(windowLabel): Update window title          │
+│  - onStateChange(): Subscribe to state changes                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Key Principles:**
+1. All state mutations flow through `state_commands.rs`
+2. Frontend calls `update_window_state` to sync changes to Rust
+3. Rust emits `window-state-changed` events for cross-window sync
+
+### saveService Integration
+
+The `saveService` delegates state management to `stateService`:
+
+```typescript
+// saveService.triggerSave now takes windowLabel
+async triggerSave(windowLabel: string): Promise<boolean> {
+  const currentWinState = await stateService.getState(windowLabel);
+
+  // Use stateService for file path
+  if (!currentWinState.filePath) {
+    filePath = await this.showSaveDialog();
+  } else {
+    filePath = currentWinState.filePath;
+  }
+
+  // After save, update state via stateService
+  await stateService.setSaved(windowLabel, result.file_path);
+}
+```
+
+### SaveStateContext
+
+Simplified to only track `isSaving`:
+
+```typescript
+// src/types/save.ts
+export interface SaveState {
+  isSaving: boolean;  // Only tracks save operation in progress
+}
+```
+
+**Note:** Use `stateService` for file path, unsaved changes, and last saved time.
+
+### Window Title Updates
+
+Window titles are updated via `stateService.updateWindowTitle()`:
+
+```typescript
+// File extensions are stripped automatically
+const title = filePath.split('/').pop()?.replace(/\.(excalidraw|json)$/i, '');
+
+// Format based on state
+if (state === 'edited') {
+  title = `[edited] ${title}`;
+} else {
+  title = `[saved] ${title}`;
+}
+```
 
 ## Multi-Window Configuration
 
@@ -784,7 +865,10 @@ Tauri v2 requires explicit permissions for each window. Use wildcard patterns fo
 - Local filesystem (JSON/Excalidraw format via native save dialog) (002-add-save-menu)
 - TypeScript 5.6, Rust 2024 edition (Tauri v2) + `@tauri-apps/plugin-dialog`, `@tauri-apps/api/core`, `@excalidraw/excalidraw` (003-open-file)
 - Local filesystem (JSON/.excalidraw files) (003-open-file)
+- Rust HashMap for window state (state_commands.rs) + frontend sync via events (004-window-state-machine)
+- stateService as single source of truth for window state machine (004-window-state-machine)
 
 ## Recent Changes
 - 001-auto-create-excalidraw: Added TypeScript 5.6, Rust edition 2024 (Tauri v2) + React 18, @excalidraw/excalidraw (to be added), @tauri-apps/api v2
 - 002-add-save-menu: Added native menu bar (App, File, Edit, View, Window, Help) with Save (Cmd+S/Ctrl+S), predefined menu items, global shortcut plugin, platform-dependent shortcuts, native save dialog via @tauri-apps/plugin-dialog
+- 004-window-state-machine: Refactored state management - `stateService` is single source of truth, `saveService` uses `stateService` for state, simplified `SaveStateContext`, removed duplicate state tracking

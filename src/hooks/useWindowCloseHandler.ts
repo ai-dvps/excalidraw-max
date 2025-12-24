@@ -70,7 +70,7 @@ export function useWindowCloseHandler(): void {
         return;
       } else if (choice === 'Yes') {
         const { saveService } = await import('../services/saveService');
-        const saved = await saveService.triggerSave();
+        const saved = await saveService.triggerSave(win.label);
         if (saved) {
           // 5. Save success -> Set VIP flag -> Close
           ignoreCloseRequest.current = true;
