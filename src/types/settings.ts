@@ -1,7 +1,7 @@
 /**
  * User Settings TypeScript Interfaces
  *
- * Defines the shape of user settings data for the exalidraw-max application.
+ * Defines the shape of user settings data for the excalidraw-max application.
  */
 
 // Placeholder interfaces for future settings categories

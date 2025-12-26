@@ -23,6 +23,10 @@ body {
   width: 100vw !important;
 }
 
+.sidebar-tabs-root {
+  padding: 0;
+}
+
 /* Dark mode support for Excalidraw */
 @media (prefers-color-scheme: dark) {
   :root {

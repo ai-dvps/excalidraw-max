@@ -29,6 +29,7 @@ fn greet(name: &str) -> String {
 /// Create the application menu with default menus (File, Edit, View, Window, Help)
 /// and add Save item to the File menu.
 fn create_app_menu(app: &tauri::App) -> Result<(), tauri::Error> {
+    let handle = app.handle();
     // Create Save menu item with accelerator (Cmd+S on Mac, Ctrl+S on Windows/Linux)
     let save_item = MenuItemBuilder::with_id("save", "Save")
         .accelerator("CmdOrControl+S")
@@ -40,7 +41,10 @@ fn create_app_menu(app: &tauri::App) -> Result<(), tauri::Error> {
 
     // Create predefined menu items
     let close_item = PredefinedMenuItem::close_window(app, None)?;
-    let quit_item = PredefinedMenuItem::quit(app, None)?;
+    let quit_item = PredefinedMenuItem::quit(
+                        handle,
+                        Some("Quit Excalidraw Max"),
+                    )?;
     let undo_item = PredefinedMenuItem::undo(app, None)?;
     let redo_item = PredefinedMenuItem::redo(app, None)?;
     let cut_item = PredefinedMenuItem::cut(app, None)?;
@@ -48,7 +52,11 @@ fn create_app_menu(app: &tauri::App) -> Result<(), tauri::Error> {
     let paste_item = PredefinedMenuItem::paste(app, None)?;
     let select_all_item = PredefinedMenuItem::select_all(app, None)?;
     let minimize_item = PredefinedMenuItem::minimize(app, None)?;
-    let about_item = PredefinedMenuItem::about(app, None, None)?;
+    let about_item = PredefinedMenuItem::about(
+                    handle,
+                    Some("About Excalidraw Max"),
+                    None,
+                )?;
     let fullscreen_item = PredefinedMenuItem::fullscreen(app, None)?;
     let services_item = PredefinedMenuItem::services(app, None)?;
 

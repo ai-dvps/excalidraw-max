@@ -4,7 +4,7 @@ This file provides guidance for Claude Code when working with this project.
 
 ## Project Overview
 
-**exalidraw-max** is a desktop application built with:
+**excalidraw-max** is a desktop application built with:
 - **Frontend:** React 18 + TypeScript + Vite
 - **Backend:** Tauri v2 (Rust)
   - docs: https://v2.tauri.app/start/
@@ -14,7 +14,7 @@ This file provides guidance for Claude Code when working with this project.
 ## Project Structure
 
 ```
-exalidraw-max/
+excalidraw-max/
 ├── src/                    # React frontend (TypeScript)
 │   ├── App.tsx             # Main React component
 │   ├── main.tsx            # React entry point
@@ -64,7 +64,7 @@ pnpm tauri dev             # Run Tauri dev mode (with native window)
 ## Tauri Configuration
 
 The app is configured in `src-tauri/tauri.conf.json`:
-- **Product Name:** exalidraw-max
+- **Product Name:** excalidraw-max
 - **Bundle ID:** com.aidvps.excalidraw-max.app
 - **Default Window:** 800x600px
 
@@ -760,7 +760,7 @@ tauri = { version = "2", features = ["macos-private-api", "devtools"] }
   "app": {
     "windows": [
       {
-        "title": "exalidraw-max",
+        "title": "excalidraw-max",
         "width": 800,
         "height": 600,
         "label": "main",

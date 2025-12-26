@@ -25,7 +25,9 @@
       "WebFetch(domain:tauritutorials.com)",
       "Bash(git checkout:*)",
       "SlashCommand(/speckit.tasks)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(.specify/scripts/bash/create-new-feature.sh:*)",
+      "WebFetch(domain:minimax-algeng-chat-tts.oss-cn-wulanchabu.aliyuncs.com)"
     ]
   }
 }

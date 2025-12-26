@@ -5,7 +5,7 @@
 
 ## Summary
 
-Implement automatic creation of an Excalidraw canvas when the exalidraw-max Tauri desktop application launches. Users will see a blank drawing canvas immediately upon app startup, with all standard Excalidraw tools available. Error handling will show a dialog with retry button if initialization fails.
+Implement automatic creation of an Excalidraw canvas when the excalidraw-max Tauri desktop application launches. Users will see a blank drawing canvas immediately upon app startup, with all standard Excalidraw tools available. Error handling will show a dialog with retry button if initialization fails.
 
 ## Technical Context
 

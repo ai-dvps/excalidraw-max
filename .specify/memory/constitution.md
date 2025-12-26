@@ -13,7 +13,7 @@
     - tasks-template.md: ✅ Compatible (Phased organization aligns with principles)
 -->
 
-# exalidraw-max Constitution
+# excalidraw-max Constitution
 
 ## Core Principles
 

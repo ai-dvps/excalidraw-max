@@ -1,6 +1,6 @@
 import React, {useCallback, useRef, useEffect, useState} from 'react';
 import {getCurrentWindow} from '@tauri-apps/api/window';
-import {Excalidraw} from '@excalidraw/excalidraw';
+import {Excalidraw, Sidebar, Footer} from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 import {ErrorBoundary} from './ErrorBoundary';
 import {saveService} from '../services/saveService';
@@ -9,6 +9,7 @@ import {stateService} from '../services/stateService.ts';
 import {useFileLoader} from '../hooks/useFileLoader';
 import {useWindowCloseHandler} from '../hooks/useWindowCloseHandler';
 import type {InitialData} from '../types/open';
+import {AIChatBox} from './AIChatBox';
 
 // Type for Excalidraw API - using any to avoid type import issues
 type ExcalidrawAPI = any;
@@ -78,6 +79,9 @@ interface ExcalidrawCanvasProps {
 
 export function ExcalidrawCanvas({initialData: propInitialData}: ExcalidrawCanvasProps): React.ReactElement {
   const excalidrawAPI = useRef<ExcalidrawAPI | null>(null);
+
+  // AI Chat Sidebar state
+  const [isChatDocked, setIsChatDocked] = useState(false);
 
   // Window close handler for unsaved changes confirmation
   useWindowCloseHandler();
@@ -233,6 +237,7 @@ export function ExcalidrawCanvas({initialData: propInitialData}: ExcalidrawCanva
     return openService.onAfterOpen(updateSavedSignature);
   }, [updateSavedSignature]);
 
+  // @ts-ignore
   return (
     <ErrorBoundary>
       <div
@@ -270,7 +275,38 @@ export function ExcalidrawCanvas({initialData: propInitialData}: ExcalidrawCanva
                 toggleTheme: true,
               },
             }}
-          />
+          >
+            {/* AI Chat Sidebar */}
+            <Sidebar name="ai-chat" docked={isChatDocked} onDock={setIsChatDocked}>
+              <Sidebar.Header />
+              {/* @ts-ignore */}
+              <Sidebar.Tabs style={{padding: '0px'}}>
+                <Sidebar.Tab tab="ai">
+                  <AIChatBox
+                    onSendMessage={async (msg) => {
+                      // Placeholder AI response - to be replaced with actual AI backend
+                      return `I'm your AI assistant. You asked: "${msg}". How can I help you with your diagram?`;
+                    }}
+                    onOpen={() => setIsChatDocked(true)}
+                    onClose={() => setIsChatDocked(false)}
+                  />
+                </Sidebar.Tab>
+              </Sidebar.Tabs>
+            </Sidebar>
+            <Footer>
+              <Sidebar.Trigger
+                name="ai-chat"
+                tab="ai"
+                style={{
+                  marginLeft: '0.5rem',
+                  background: '#70b1ec',
+                  color: 'white',
+                }}
+              >
+                AI Chat
+              </Sidebar.Trigger>
+            </Footer>
+          </Excalidraw>
         )}
       </div>
     </ErrorBoundary>

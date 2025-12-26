@@ -1,0 +1,271 @@
+# AI Chat Box API Contracts
+
+## Overview
+
+This document defines the interface contracts for the AI Chat Box feature.
+Since the AI backend is implemented separately, these contracts define:
+1. Excalidraw Sidebar integration props
+2. Ant Design X component interfaces
+3. Chat state management hooks
+
+---
+
+## 1. Sidebar Integration Contract
+
+### Props Interface
+
+```typescript
+interface AISidebarProps {
+  /** Sidebar identifier - must be unique */
+  name: 'ai-chat';
+
+  /** Controlled open/close state */
+  docked: boolean;
+
+  /** Callback when user toggles dock state */
+  onDock: (docked: boolean) => void;
+
+  /** Optional: callback on sidebar state changes */
+  onStateChange?: (state: SidebarState) => void;
+}
+
+interface SidebarState {
+  docked: boolean;
+  activeTab: string;
+}
+```
+
+### Trigger Component
+
+```typescript
+interface SidebarTriggerProps {
+  /** Must match Sidebar name */
+  name: 'ai-chat';
+
+  /** Optional: tab to switch to when triggered */
+  tab?: 'ai';
+
+  /** Custom click handler */
+  onToggle?: () => void;
+
+  /** Tooltip title */
+  title?: string;
+
+  /** Icon or content */
+  icon?: React.ReactNode;
+
+  /** CSS class */
+  className?: string;
+}
+```
+
+---
+
+## 2. Chat Component Contracts
+
+### Message Types
+
+```typescript
+type MessageRole = 'user' | 'ai';
+
+type MessageStatus = 'sent' | 'loading' | 'error';
+
+interface ChatMessage {
+  /** Unique identifier */
+  id: string;
+
+  /** Message content */
+  content: string;
+
+  /** Sender type */
+  role: MessageRole;
+
+  /** Timestamp */
+  timestamp: Date;
+
+  /** Delivery status */
+  status?: MessageStatus;
+}
+```
+
+### Bubble List Contract
+
+```typescript
+interface BubbleListProps {
+  /** Messages to display */
+  items: ChatMessage[];
+
+  /** Role-based styling configuration */
+  roles: {
+    ai: {
+      placement: 'start';
+      typing?: boolean;
+      avatar?: AvatarProps;
+    };
+    user: {
+      placement: 'end';
+      avatar?: AvatarProps;
+    };
+  };
+
+  /** Auto-scroll to latest message */
+  autoScroll?: boolean;
+
+  /** Container styles */
+  style?: React.CSSProperties;
+}
+```
+
+### Sender Contract
+
+```typescript
+interface SenderProps {
+  /** Current input value */
+  value: string;
+
+  /** Input change handler */
+  onChange: (value: string) => void;
+
+  /** Submit handler (Enter or send button) */
+  onSubmit: (text: string) => void;
+
+  /** Loading state - disables input */
+  loading?: boolean;
+
+  /** Placeholder text */
+  placeholder?: string;
+
+  /** Submit button disabled state */
+  disabled?: boolean;
+}
+```
+
+---
+
+## 3. Chat State Hook Contract
+
+### useAIChat Hook
+
+```typescript
+interface UseAIChatReturn {
+  // State
+  messages: ChatMessage[];
+  isOpen: boolean;
+  isDocked: boolean;
+  isLoading: boolean;
+  inputValue: string;
+
+  // Actions
+  sendMessage: (content: string) => void;
+  clearConversation: () => void;
+  setOpen: (open: boolean) => void;
+  setDocked: (docked: boolean) => void;
+  setInputValue: (value: string) => void;
+  handleSubmit: () => void;
+}
+
+type UseAIChatProps = {
+  /** Optional: AI provider for message handling */
+  provider?: AIProvider;
+
+  /** Optional: onMessage callback */
+  onMessage?: (message: ChatMessage) => void;
+
+  /** Optional: onError callback */
+  onError?: (error: Error) => void;
+};
+```
+
+---
+
+## 4. AI Provider Interface
+
+### AI Provider Contract
+
+```typescript
+interface AIProvider {
+  /** Send message and get response */
+  sendMessage(content: string): Promise<string>;
+
+  /** Abort current request */
+  abort(): void;
+
+  /** Check if provider is ready */
+  isReady(): boolean;
+}
+
+interface AIProviderConfig {
+  /** API endpoint or key */
+  endpoint?: string;
+
+  /** Model identifier */
+  model?: string;
+
+  /** Request timeout in ms */
+  timeout?: number;
+}
+```
+
+---
+
+## 5. Event Contracts
+
+### Component Events
+
+```typescript
+interface ChatEvents {
+  // User actions
+  'chat:open': { source: 'sidebar-trigger' | 'menu' };
+  'chat:close': { reason: 'outside-click' | 'user-action' };
+  'chat:send': { content: string; messageId: string };
+  'chat:clear': {};
+
+  // AI responses
+  'chat:response:start': { messageId: string };
+  'chat:response:complete': { messageId: string; content: string };
+  'chat:response:error': { messageId: string; error: string };
+
+  // UI interactions
+  'chat:dock': { docked: boolean };
+  'chat:resize': { width: number };
+}
+```
+
+---
+
+## 6. Error Handling Contracts
+
+### Error Types
+
+```typescript
+type ChatError =
+  | { type: 'network'; message: 'Failed to connect' }
+  | { type: 'timeout'; message: 'Request timed out' }
+  | { type: 'validation'; message: 'Empty message' }
+  | { type: 'provider'; message: string };
+
+interface ErrorHandler {
+  (error: ChatError): void;
+}
+```
+
+### Error Display Contract
+
+```typescript
+interface ErrorDisplayProps {
+  /** Error to display */
+  error: ChatError;
+
+  /** Retry action handler */
+  onRetry?: () => void;
+
+  /** Dismiss action handler */
+  onDismiss?: () => void;
+
+  /** Show retry button */
+  showRetry?: boolean;
+
+  /** Custom icon */
+  icon?: React.ReactNode;
+}
+```

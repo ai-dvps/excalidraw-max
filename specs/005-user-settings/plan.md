@@ -5,7 +5,7 @@
 
 ## Summary
 
-This plan implements a user settings feature for the exalidraw-max Tauri desktop application. Users can access settings via keyboard shortcut (`Cmd+,` / `Ctrl+,`) or menu item, configure preferences in a modal dialog with category navigation, and persist changes using the Tauri store plugin. The implementation uses Ant Design UI components and includes a `useSettings` React hook for application-wide settings access.
+This plan implements a user settings feature for the excalidraw-max Tauri desktop application. Users can access settings via keyboard shortcut (`Cmd+,` / `Ctrl+,`) or menu item, configure preferences in a modal dialog with category navigation, and persist changes using the Tauri store plugin. The implementation uses Ant Design UI components and includes a `useSettings` React hook for application-wide settings access.
 
 ## Technical Context
 
