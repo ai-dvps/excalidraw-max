@@ -43,7 +43,7 @@ fn create_app_menu(app: &tauri::App) -> Result<(), tauri::Error> {
     let close_item = PredefinedMenuItem::close_window(app, None)?;
     let quit_item = PredefinedMenuItem::quit(
                         handle,
-                        Some("Quit Excalidraw Max"),
+                        Some("Quit ExcaliMaxDraw"),
                     )?;
     let undo_item = PredefinedMenuItem::undo(app, None)?;
     let redo_item = PredefinedMenuItem::redo(app, None)?;
@@ -54,7 +54,7 @@ fn create_app_menu(app: &tauri::App) -> Result<(), tauri::Error> {
     let minimize_item = PredefinedMenuItem::minimize(app, None)?;
     let about_item = PredefinedMenuItem::about(
                     handle,
-                    Some("About Excalidraw Max"),
+                    Some("About ExcaliMaxDraw"),
                     None,
                 )?;
     let fullscreen_item = PredefinedMenuItem::fullscreen(app, None)?;

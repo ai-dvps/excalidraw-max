@@ -7,7 +7,7 @@
 
 ## Summary
 
-Implementation of a user settings feature for excalidraw-max Tauri desktop application. Users can access settings via `Cmd+,` / `Ctrl+,` shortcut or menu, configure preferences in a modal dialog, and persist changes using Tauri store plugin.
+Implementation of a user settings feature for excalimaxdraw Tauri desktop application. Users can access settings via `Cmd+,` / `Ctrl+,` shortcut or menu, configure preferences in a modal dialog, and persist changes using Tauri store plugin.
 
 ## Dependencies
 

@@ -9,7 +9,7 @@
 
 ### User Story 1 - Fresh Excalidraw Canvas on Launch (Priority: P1)
 
-A user opens the excalidraw-max application and immediately sees a blank Excalidraw whiteboard canvas ready for drawing.
+A user opens the excalimaxdraw application and immediately sees a blank Excalidraw whiteboard canvas ready for drawing.
 
 **Why this priority**: This is the primary user experience for the application. Users expect to start drawing immediately upon launching the app. Without this feature, users would see an empty or blank screen and would need to manually create a new drawing, creating unnecessary friction.
 

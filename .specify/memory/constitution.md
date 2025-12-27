@@ -13,7 +13,7 @@
     - tasks-template.md: ✅ Compatible (Phased organization aligns with principles)
 -->
 
-# excalidraw-max Constitution
+# excalimaxdraw Constitution
 
 ## Core Principles
 
@@ -80,7 +80,7 @@ Rationale: Desktop app bugs are harder to debug than web apps. Comprehensive tes
 ### Release Process
 - Version bumps follow Semantic Versioning
 - Changelog MUST be updated for each release
-- macOS bundle identity remains `com.aidvps.excalidraw-max.app`
+- macOS bundle identity remains `com.aidvps.excalimaxdraw.app`
 
 ## Governance
 

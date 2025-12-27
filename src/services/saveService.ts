@@ -59,7 +59,7 @@ function transformToExcalidrawFormat(data: any): any {
   return {
     type: 'excalidraw',
     version: 2,
-    source: 'excalidraw-max',
+    source: 'excalimaxdraw',
     elements: data.elements || [],
     appState: data.appState || {},
     files: data.files || {},

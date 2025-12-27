@@ -5,7 +5,7 @@
 
 ## Summary
 
-Implement "Create New File" functionality for the excalidraw-max desktop application. Users can create new files via the File menu or keyboard shortcut (Ctrl+N/Cmd+N). New files open in a new Tauri window with user settings (e.g., background color) applied.
+Implement "Create New File" functionality for the excalimaxdraw desktop application. Users can create new files via the File menu or keyboard shortcut (Ctrl+N/Cmd+N). New files open in a new Tauri window with user settings (e.g., background color) applied.
 
 ## Technical Context
 
